@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Clicker Dash</title>
+    <style>
+        :root {
+            --primary: #ff007f;
+            --secondary: #00ffff;
+            --bg-dark: #0a0612;
+            --panel-bg: #140d24;
+            --text-color: #ffffff;
+        }
+        body {
+            margin: 0;
+            background: var(--bg-dark);
+            color: var(--text-color);
+            font-family: 'Courier New', Courier, monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            user-select: none;
+            overflow: hidden;
+        }
+        h1 {
+            color: var(--primary);
+            text-shadow: 0 0 10px var(--primary);
+            margin: 15px 0 5px 0;
+        }
+        #score-board {
+            font-size: 32px;
+            color: #ffd700;
+            font-weight: bold;
+            margin-bottom: 15px;
+            text-shadow: 0 0 15px #ffd700;
+        }
+        #game-layout {
+            display: flex;
+            gap: 20px;
+            background: var(--panel-bg);
+            padding: 20px;
+            border-radius: 12px;
+            border: 4px solid var(--primary);
+            box-shadow: 0 0 30px rgba(255, 0, 127, 0.3);
+            position: relative;
+        }
+        #game-container {
+            position: relative;
+            width: 500px;
+            height: 380px;
+            background: linear-gradient(#1f1235, #0d0618);
+            border: 3px solid var(--secondary);
+            border-radius: 8px;
+            overflow: hidden;
+            cursor: pointer;
+        }
+        #player {
+            position: absolute;
+            bottom: 60px;
+            left: 80px;
+            width: 45px;
+            height: 45px;
+            background: var(--primary);
+            border: 3px solid #fff;
+            border-radius: 50%;
+            box-shadow: 0 0 15px var(--primary);
+            transition: background 0.2s, box-shadow 0.2s;
+        }
+        .running {
+            animation: spinAndBounce 0.4s infinite linear;
+        }
+        @keyframes spinAndBounce {
+            0% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-15px) rotate(180deg); }
+            100% { transform: translateY(0) rotate(360deg); }
+        }
+        #ground {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 60px;
+            background: #25163a;
+            border-top: 4px solid var(--secondary);
+        }
+        #side-panels {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            width: 260px;
+        }
+        .panel-box {
+            background: #1c1130;
+            border: 2px solid var(--secondary);
+            border-radius: 8px;
+            padding: 10px;
+        }
+        .panel-title {
+            font-size: 16px;
+            color: var(--secondary);
+            text-align: center;
+            border-bottom: 2px solid var(--secondary);
+            padding-bottom: 5px;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+        button {
+            padding: 10px;
+            font-size: 12px;
+            font-weight: bold;
+            background: #2b1a4a;
+            color: #fff;
+            border: 2px solid #ffd700;
+            cursor: pointer;
+            border-radius: 6px;
+            text-align: left;
+            transition: transform 0.1s, background 0.1s;
+        }
+        button:hover { background: #ffd700; color: #000; }
+        button:active { transform: scale(0.95); }
+        
+        .coin-pop {
+            position: absolute;
+            color: #ffd700;
+            font-weight: bold;
+            font-size: 26px;
+            text-shadow: 0 0 5px #000;
+            animation: floatUp 0.5s ease-out forwards;
+            pointer-events: none;
+        }
+        @keyframes floatUp {
+            0% { opacity: 1; transform: translateY(0) scale(1); }
+            100% { opacity: 0; transform: translateY(-80px) scale(1.3); }
+        }
+        .overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(10, 6, 18, 0.95);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            gap: 15px;
+        }
+        .hidden { display: none !important; }
+        .menu-btn {
+            width: 200px;
+            text-align: center;
+            font-size: 18px;
+            padding: 12px;
+            border-color: var(--primary);
+        }
+        #leaderboard-list {
+            font-size: 14px;
+            color: #ffd700;
+            line-height: 1.6;
+        }
+        #controls-bar {
+            margin-top: 15px;
+            display: flex;
+            gap: 15px;
+        }
+        .hud-btn {
+            background: #1c1130;
+            border: 2px solid var(--primary);
+            color: #fff;
+            padding: 8px 15px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>⚡ Clicker Dash 🏃‍♂️</h1>
+    <div id="score-board">💰 <span id="coin-count">0</span></div>
+    
+    <div id="game-layout">
+        <div id="game-container">
+            <div id="player" class="running"></div>
+            <div id="ground"></div>
+
+            <div id="main-menu" class="overlay">
+                <h2 style="color: var(--primary); font-size: 28px; margin: 0;">CLICKER DASH</h2>
+                <button class="menu-btn" id="start-btn">▶️ START DASH</button>
+                <div style="font-size: 12px; color: #aaa; text-align: center;">Controls: Spacebar or Click to Dash<br>Press 'P' to Pause</div>
+            </div>
+
+            <div id="pause-menu" class="overlay hidden">
+                <h2 style="color: var(--secondary); font-size: 32px; margin: 0;">GAME PAUSED</h2>
+                <button class="menu-btn" id="resume-btn" style="border-color: var(--secondary);">▶️ RESUME</button>
+                <button class="menu-btn" id="quit-btn" style="border-color: #ff3333;">🏠 MAIN MENU</button>
+            </div>
+        </div>
+
+        <div id="side-panels">
+            <div class="panel-box">
+                <div class="panel-title">🏆 Top High Scores</div>
+                <div id="leaderboard-list">No scores recorded yet.</div>
+            </div>
+
+            <div class="panel-box">
+                <div class="panel-title">🚀 Upgrades Shop</div>
+                <div id="shop-list">
+                    <button id="click-upgrade-btn">⚡ Click Power (Lv 1)<br>Cost: 15 coins</button>
+                    <button id="squire-btn">🤖 Auto-Dasher (Own: 0)<br>Cost: 50 (+2/s)</button>
+                </div>
+            </div>
+
+            <div class="panel-box">
+                <div class="panel-title">🎨 Neon Theme</div>
+                <div style="display: flex; gap: 5px; justify-content: center;">
+                    <button style="background: #ff007f; width: 30px; height: 30px; padding:0;" onclick="changeTheme('#ff007f', '#00ffff')"></button>
+                    <button style="background: #7000ff; width: 30px; height: 30px; padding:0;" onclick="changeTheme('#7000ff', '#00ff00')"></button>
+                    <button style="background: #ff9d00; width: 30px; height: 30px; padding:0;" onclick="changeTheme('#ff9d00', '#ff00ff')"></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="controls-bar">
+        <button class="hud-btn" id="hud-pause-btn">⏸️ Pause (P)</button>
+        <button class="hud-btn" id="reset-btn" style="border-color: #ff3333;">⚠️ Wipe Save</button>
+    </div>
+    <script>
+        let state = {
+            coins: 0,
+            clickPower: 1,
+            clickUpgradeCost: 15,
+            squires: 0,
+            squireCost: 50,
+            highScores: []
+        };
+
+        let isPaused = true;
+        let inMenu = true;
+
+        const coinCountEl = document.getElementById('coin-count');
+        const clickUpgradeBtn = document.getElementById('click-upgrade-btn');
+        const squireBtn = document.getElementById('squire-btn');
+        const gameContainer = document.getElementById('game-container');
+        const playerEl = document.getElementById('player');
+        
+        const mainMenu = document.getElementById('main-menu');
+        const pauseMenu = document.getElementById('pause-menu');
+        const startBtn = document.getElementById('start-btn');
+        const resumeBtn = document.getElementById('resume-btn');
+        const quitBtn = document.getElementById('quit-btn');
+        const hudPauseBtn = document.getElementById('hud-pause-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const leaderboardList = document.getElementById('leaderboard-list');
+
+        function loadGame() {
+            const saved = localStorage.getItem('clickerDashUltimateSave');
+            if (saved) {
+                state = JSON.parse(saved);
+                if(!state.highScores) state.highScores = [];
+            }
+            updateUI();
+            renderLeaderboard();
+        }
+
+        function saveGame() {
+            localStorage.setItem('clickerDashUltimateSave', JSON.stringify(state));
+        }
+
+        function changeTheme(primary, secondary) {
+            document.documentElement.style.setProperty('--primary', primary);
+            document.documentElement.style.setProperty('--secondary', secondary);
+        }
+
+        function updateUI() {
+            coinCountEl.textContent = Math.floor(state.coins);
+            clickUpgradeBtn.innerHTML = `⚡ Click Power (Lv ${state.clickPower})<br>Cost: ${state.clickUpgradeCost} coins`;
+            squireBtn.innerHTML = `🤖 Auto-Dasher (Own: ${state.squires})<br>Cost: ${state.squireCost} coins (+2/s)`;
+        }
+
+        function renderLeaderboard() {
+            if (state.highScores.length === 0) {
+                leaderboardList.innerHTML = "No scores recorded yet.";
+                return;
+            }
+            leaderboardList.innerHTML = state.highScores
+                .map((score, index) => `${index + 1}. 💰 ${Math.floor(score)} Coins`)
+                .join('<br>');
+        }
+
+        function checkHighScore() {
+            if (!state.highScores.includes(state.coins)) {
+                state.highScores.push(state.coins);
+                state.highScores.sort((a, b) => b - a);
+                state.highScores = state.highScores.slice(0, 3);
+                renderLeaderboard();
+            }
+        }
+
+        function startGame() {
+            inMenu = false;
+            isPaused = false;
+            mainMenu.classList.add('hidden');
+            playerEl.classList.add('running');
+        }
+
+        function togglePause() {
+            if (inMenu) return;
+            isPaused = !isPaused;
+            if (isPaused) {
+                pauseMenu.classList.remove('hidden');
+                playerEl.classList.remove('running');
+                checkHighScore();
+                saveGame();
+            } else {
+                pauseMenu.classList.add('hidden');
+                playerEl.classList.add('running');
+            }
+        }
+
+        function quitToMenu() {
+            checkHighScore();
+            saveGame();
+            isPaused = true;
+            inMenu = true;
+            pauseMenu.classList.add('hidden');
+            mainMenu.classList.remove('hidden');
+            playerEl.classList.remove('running');
+        }
+
+        function earnCoins(amount, event) {
+            if (isPaused) return;
+            state.coins += amount;
+            updateUI();
+
+            if (event) {
+                let x = event.clientX - gameContainer.getBoundingClientRect().left;
+                let y = event.clientY - gameContainer.getBoundingClientRect().top;
+                createPopText(`+${amount}`, x, y);
+            }
+        }
+
+        function createPopText(text, x, y) {
+            const el = document.createElement('div');
+            el.className = 'coin-pop';
+            el.textContent = text;
+            el.style.left = `${x}px`;
+            el.style.top = `${y}px`;
+            gameContainer.appendChild(el);
+            setTimeout(() => el.remove(), 500);
+        }
+
+        gameContainer.addEventListener('mousedown', (e) => {
+            if (e.target.closest('.overlay')) return;
+            earnCoins(state.clickPower, e);
+        });
+
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                e.preventDefault();
+                earnCoins(state.clickPower, null);
+            }
+            if (e.code === 'KeyP') {
+                togglePause();
+            }
+            if (e.code === 'KeyM') {
+                quitToMenu();
+            }
+        });
+
+        clickUpgradeBtn.addEventListener('click', () => {
+            if (state.coins >= state.clickUpgradeCost) {
+                state.coins -= state.clickUpgradeCost;
+                state.clickPower += 1;
+                state.clickUpgradeCost = Math.floor(state.clickUpgradeCost * 1.6);
+                updateUI();
+                saveGame();
+            }
+        });
+
+        squireBtn.addEventListener('click', () => {
+            if (state.coins >= state.squireCost) {
+                state.coins -= state.squireCost;
+                state.squires += 1;
+                state.squireCost = Math.floor(state.squireCost * 1.5);
+                updateUI();
+                saveGame();
+            }
+        });
+
+        startBtn.addEventListener('click', startGame);
+        resumeBtn.addEventListener('click', togglePause);
+        hudPauseBtn.addEventListener('click', togglePause);
+        quitBtn.addEventListener('click', quitToMenu);
+
+        resetBtn.addEventListener('click', () => {
+            if (confirm("Reset leaderboard and all saved currency?")) {
+                localStorage.removeItem('clickerDashUltimateSave');
+                location.reload();
+            }
+        });
+
+        setInterval(() => {
+            if (!isPaused && state.squires > 0) {
+                earnCoins(state.squires * 0.2, null);
+            }
+        }, 100);
+
+        setInterval(() => {
+            if(!isPaused) {
+                checkHighScore();
+                saveGame();
+            }
+        }, 5000);
+
+        loadGame();
+    </script>
+</body>
+</html>
