@@ -2,396 +2,431 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Double Agent: Deep Fake WebRTC</title>
+    <title>Space Sabotage: Classic Edition</title>
     <style>
         :root {
-            --matrix-green: #00ff66;
-            --cyber-red: #ff3333;
-            --dark-core: #06040a;
-            --panel-bg: #110e1c;
+            --classic-blue: #1b263b;
+            --classic-gray: #415a77;
+            --alert-red: #c1121f;
+            --text-light: #e0e1dd;
         }
-        body {
-            margin: 0; background: var(--dark-core); color: #fff;
-            font-family: 'Courier New', Courier, monospace;
-            display: flex; flex-direction: column; align-items: center; user-select: none;
-        }
-        h1 { color: var(--matrix-green); text-shadow: 0 0 10px var(--matrix-green); margin: 15px 0 5px 0; font-size: 26px; }
-        
-        .gui-screen {
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            background: #0b0c10; color: var(--text-light);
+            font-family: 'Arial', sans-serif; user-select: none;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            position: absolute; top:0; left:0; width:100vw; height:100vh; background: var(--dark-core); gap: 15px; z-index: 10;
         }
+        #game-frame {
+            position: relative; width: 800px; height: 500px;
+            border: 4px solid var(--classic-gray); background: #000;
+            border-radius: 8px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.7);
+        }
+        .gui-screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 10; background: rgba(11, 12, 16, 0.85); gap: 15px;
+        }
+        #screen-main { background: rgba(11, 12, 16, 0.4) !important; }
         .hidden { display: none !important; }
-        .window-box {
-            background: var(--panel-bg); border: 3px solid #221b38; padding: 30px; border-radius: 12px; width: 360px;
-            box-shadow: 0 0 30px rgba(0, 255, 102, 0.1); text-align: center;
+        
+        .panel-box {
+            background: var(--classic-blue); border: 2px solid var(--classic-gray);
+            padding: 25px; border-radius: 6px; width: 380px; text-align: center;
         }
-        h2 { color: var(--matrix-green); text-shadow: 0 0 8px var(--matrix-green); margin-top: 0; }
-        input, button { width: 100%; padding: 12px; font-size: 14px; font-family: monospace; border-radius: 6px; box-sizing: border-box; margin-top: 10px; }
-        input { background: #090712; border: 1px solid var(--matrix-green); color: #fff; }
-        button { background: #1c172e; border: 2px solid var(--matrix-green); color: #fff; cursor: pointer; font-weight: bold; }
-        button:hover { background: var(--matrix-green); color: #000; box-shadow: 0 0 10px var(--matrix-green); }
+        h2 { margin-top: 0; font-size: 26px; color: #fff; letter-spacing: 1px; }
         
-        #game-interface { display: flex; gap: 20px; padding: 20px; margin-top: 20px; }
-        #canvas-frame { position: relative; border: 2px solid var(--matrix-green); background: #090712; border-radius: 6px; width:600px; height:450px; }
-        #canvas-render { display: block; }
+        input, select, button {
+            width: 100%; padding: 12px; font-size: 14px; font-family: sans-serif;
+            border-radius: 4px; box-sizing: border-box; margin-top: 10px; border: none;
+        }
+        input, select { background: #fff; color: #000; font-weight: bold; }
+        button {
+            background: var(--classic-gray); color: #fff; cursor: pointer;
+            font-weight: bold; text-transform: uppercase; transition: background 0.2s;
+        }
+        button:hover { background: #5c7d99; }
+        .danger-btn { background: var(--alert-red) !important; }
+        .danger-btn:hover { background: #e63946 !important; }
+
+        .list-container {
+            background: #000; border: 1px solid var(--classic-gray);
+            height: 140px; overflow-y: auto; margin-top: 10px; border-radius: 4px; padding: 5px;
+        }
+        .list-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 8px; border-bottom: 1px solid #222; font-size: 13px;
+        }
+        .list-item button { width: auto; padding: 4px 10px; margin: 0; font-size: 11px; }
         
-        /* Dead Body Crisis Flash Overlay Overlay */
+        #game-layout { display: flex; width: 100%; height: 100%; }
+        #canvas-render { background: #050508; display: block; }
+        
+        #hud-overlay {
+            position: absolute; top: 15px; left: 15px; display: flex; gap: 20px;
+            font-size: 16px; font-weight: bold; text-shadow: 2px 2px #000; z-index: 5;
+        }
+        #action-btn-layout { position: absolute; bottom: 20px; right: 20px; z-index: 5; }
+        #action-btn-layout button { width: 140px; height: 50px; border-radius: 25px; font-size: 16px; }
+
         #body-report-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(255, 0, 50, 0.9); display: flex; flex-direction: column;
+            background: #800000; display: flex; flex-direction: column;
             justify-content: center; align-items: center; z-index: 50;
-            animation: pulseAlert 0.5s infinite alternate;
-        }
-        @keyframes pulseAlert {
-            from { background: rgba(180, 0, 30, 0.9); }
-            to { background: rgba(255, 0, 50, 0.95); }
-        }
-        .report-banner {
-            font-size: 36px; font-weight: bold; color: #fff; text-shadow: 0 0 20px #000;
-            letter-spacing: 2px; text-transform: uppercase; margin-bottom: 20px;
         }
     </style>
-    <!-- Loads PeerJS directly inside file to bypass building separate cloud network servers -->
     <script src="https://unpkg.com"></script>
 </head>
 <body>
 
-    <h1>🕵️‍♂️ DOUBLE AGENT: NET FORWARD</h1>
-    
-    <!-- MAIN INTERFACE MAIN MENU PANEL -->
-    <div id="gui-main" class="gui-screen">
-        <div class="window-box">
-            <h2>NETWORK GATEWAY</h2>
-            <input type="text" id="username-input" placeholder="ENTER PLAYER HANDLE...">
-            <button onclick="initiateAsHost()">🖥️ STANDUP HOST INSTANCE</button>
-            <input type="text" id="join-code-input" placeholder="PASTE TARGET HUB ID..." style="margin-top:25px;">
-            <button onclick="initiateAsClient()">📡 LINK REMOTE HUB ID</button>
-        </div>
-    </div>
+    <div id="game-frame">
+        <canvas id="canvas-render" width="800" height="500"></canvas>
 
-    <!-- LOBBY HUB WAITING ROOM GRID -->
-    <div id="gui-lobby" class="gui-screen hidden">
-        <div class="window-box">
-            <h2>HUB CODE: <span id="lobby-code-display" style="color:#fff; font-size:14px;">GENERATING...</span></h2>
-            <p style="font-size:11px; color:#888;">Copy this hub ID code and send to friends</p>
-            <div id="player-list-box" style="text-align:left; background:#090712; padding:15px; border-radius:6px; min-height:80px; font-size:13px;">
-                Awakening relay mesh channels...
-            </div>
-            <button id="start-game-btn" class="hidden" onclick="hostLaunchEngine()" style="border-color:var(--cyber-red); margin-top:20px;">🎬 COMMENCE OPERATIONS</button>
-            <p id="host-wait-msg" style="font-size:12px; color:#666;">Synchronizing configurations to Master Hub...</p>
+        <div id="hud-overlay" class="hidden">
+            <div>💰 Coins: <span id="hud-coins">0</span></div>
+            <div>📋 Room: <span id="hud-room">---</span></div>
         </div>
-    </div>
-    <!-- ACTION SPACE VIEW LAYER -->
-    <div id="gui-gameplay" class="hidden">
-        <div id="game-interface">
-            <div id="canvas-frame">
-                <canvas id="canvas-render" width="600" height="450"></canvas>
-                
-                <!-- Dead Body Overlay GUI -->
-                <div id="body-report-overlay" class="hidden">
-                    <canvas id="overlay-logo-canvas" width="120" height="120"></canvas>
-                    <div class="report-banner">⚠️ Body Discovered! ⚠️</div>
-                    <div id="report-details" style="font-size: 18px; font-weight: bold; background: #000; padding: 8px 20px; border-radius: 4px;">CRITICAL SYSTEM EMERGENCY MUTINY</div>
-                    <button onclick="closeReportOverlay()" style="width:160px; margin-top:20px; border-color:#fff; background:#000;">OK</button>
+
+        <div id="action-btn-layout" class="hidden">
+            <button id="context-btn" onclick="triggerContextAction()">USE</button>
+        </div>
+        <!-- GUI SCREEN 1: Welcome Name Picker -->
+        <div id="screen-login" class="gui-screen">
+            <div class="panel-box">
+                <h2>SPACE SABOTAGE</h2>
+                <input type="text" id="username-input" placeholder="ENTER USERNAME...">
+                <button onclick="saveProfileAndContinue()">CONFIRM IDENTITY</button>
+            </div>
+        </div>
+
+        <!-- GUI SCREEN 2: Classic Main Menu Menu -->
+        <div id="screen-main" class="gui-screen hidden">
+            <div class="panel-box" style="background: rgba(27, 38, 59, 0.9);">
+                <h2>MAIN COMMAND</h2>
+                <button onclick="openLobbyBrowser()">▶__ PLAY (FIND LOBBIES)</button>
+                <button onclick="createNewHostLobby()">🖥️ HOST LOBBY</button>
+                <button onclick="openCustomizer()">🎨 SKINS & SETTINGS</button>
+                <button onclick="openInstructions()">📖 HOW TO PLAY</button>
+            </div>
+        </div>
+
+        <!-- GUI SCREEN 3: Server Browser List -->
+        <div id="screen-browser" class="gui-screen hidden">
+            <div class="panel-box" style="width: 500px;">
+                <h2>PUBLIC LOBBIES ANYWHERE</h2>
+                <div class="list-container" id="browser-list">
+                    <div style="padding:20px; color:#666;">Scanning matching frequencies...</div>
+                </div>
+                <div style="display:flex; gap:10px; margin-top:10px;">
+                    <button onclick="refreshPublicLobbies()" style="background:#222;">🔄 REFRESH</button>
+                    <button onclick="showScreen('screen-main')">⬅️ BACK</button>
                 </div>
             </div>
+        </div>
 
-            <div style="width:240px; display:flex; flex-direction:column; gap:12px;">
-                <div style="background:var(--panel-bg); padding:15px; border:2px solid #221b38; border-radius:6px;">
-                    <div style="color:var(--matrix-green); font-weight:bold; margin-bottom:10px; font-size:13px;">ENCRYPTED TELEMETRY DATA FEED</div>
-                    <div id="game-logs" style="height:260px; overflow-y:auto; font-size:11px; color:#b5b0cd; line-height:1.4;"></div>
-                </div>
-                <button id="kill-interact-btn" onclick="executeContextAction()" style="border-color:var(--cyber-red);">💻 INTERACT / SABOTAGE</button>
+        <!-- GUI SCREEN 4: Skin Customizer Customizer -->
+        <div id="screen-customizer" class="gui-screen hidden">
+            <div class="panel-box">
+                <h2>TEXTURE CONFIGURATOR</h2>
+                <label style="font-size:12px; color:#aaa; display:block; text-align:left;">CHOOSE CHARACTER ART STYLE:</label>
+                <select id="skin-select-dropdown">
+                    <option value="suit">🚀 CLASSIC CREWMATE SUIT</option>
+                    <option value="blob">💧 ANIMATED JELLY BLOB</option>
+                </select>
+                <button onclick="showScreen('screen-main')" style="margin-top:20px;">💾 SAVE & EXIT</button>
             </div>
         </div>
-    </div>
 
+        <!-- GUI SCREEN 5: Manual Logistics Manual -->
+        <div id="screen-instructions" class="gui-screen hidden">
+            <div class="panel-box" style="width: 500px; text-align: left;">
+                <h2 style="text-align:center;">MANUAL LOGISTICS</h2>
+                <p><b>• MOVEMENT:</b> Use <b>W, A, S, D</b> or Arrow Keys to navigate rooms.</p>
+                <p><b>• OBJECTIVE:</b> Crewmates clean dark computer core towers. Impostors eliminate targets.</p>
+                <p><b>• INTERACTIONS:</b> Stand near servers or victims and click the bottom-right action button.</p>
+                <button onclick="showScreen('screen-main')" style="margin-top:15px;">UNDERSTOOD</button>
+            </div>
+        </div>
+
+        <!-- GUI SCREEN 6: Waiting Lobby Hub Room -->
+        <div id="screen-lobby" class="gui-screen hidden">
+            <div class="panel-box">
+                <h2>LOBBY KEY: <span id="lobby-key-display" style="color:#ffb703;">------</span></h2>
+                <p style="font-size:11px; color:#888; margin:0;">Give this scrambled key to outside agents</p>
+                <div class="list-container" id="lobby-crew-list" style="height:110px; text-align:left; padding:10px;"></div>
+                <button id="launch-match-btn" class="hidden danger-btn" onclick="hostInitiateMatch()">🎬 LAUNCH OPERATIONS</button>
+                <p id="client-wait-hint" style="font-size:11px; color:#555; margin-top:10px;">Waiting for operational authority signature...</p>
+            </div>
+        </div>
+
+        <!-- GUI SCREEN 7: Dead Body Found Overlay Box -->
+        <div id="body-report-overlay" class="gui-screen hidden">
+            <div style="font-size:70px; margin-bottom:10px;">🚨</div>
+            <div style="font-size:32px; font-weight:bold; letter-spacing:2px; color:#fff;">CRITICAL REPORT</div>
+            <div id="report-string-msg" style="font-size:18px; margin:15px 0; background:#000; padding:10px 30px; border-radius:4px; border:1px solid var(--classic-gray);">A victim signature was discovered.</div>
+            <button onclick="dismissCrisisOverlay()" style="width:180px; background:#000; border:1px solid #fff;">DISMISS</button>
+        </div>
+        <input type="text" id="join-code-input" class="hidden">
+    </div>
     <script>
         const canvas = document.getElementById('canvas-render');
         const ctx = canvas.getContext('2d');
-        const logsBox = document.getElementById('game-logs');
-        const actionBtn = document.getElementById('kill-interact-btn');
-        const bodyOverlay = document.getElementById('body-report-overlay');
+        const browserList = document.getElementById('browser-list');
+        const lobbyCrewList = document.getElementById('lobby-crew-list');
+        const skinSelect = document.getElementById('skin-select-dropdown');
+        const contextBtn = document.getElementById('context-btn');
 
-        let peer = null; let connections = []; let myId = "";
-        let amIHost = false; let myUsername = "";
-        let gameState = { players: {}, nodes: [], status: 'lobby' };
+        let myUsername = "Astronaut";
+        let amIHost = false;
+        let myLobbyCode = "";
+        let peerInstance = null;
+        let liveConnections = [];
+        
+        let networkState = { players: {}, nodes: [], status: 'menu' };
+        let menuBlobs = []; 
 
-        // --- ARTISTIC TEXTURE BLUEPRINT GENERATOR HOOKS ---
-        let textures = { agentSkin: null, serverSkin: null, eliminationMark: null, alertIcon: null };
-
-        function cookTextureAssets() {
-            function buildAsset(w, h, paint) {
-                let tc = document.createElement('canvas'); tc.width = w; tc.height = h;
-                paint(tc.getContext('2d')); return tc;
-            }
-            // Real Texture 1: Futuristic Visor Cyber Agent
-            textures.agentSkin = buildAsset(32, 32, (c) => {
-                c.fillStyle = '#110c24'; c.fillRect(4, 4, 24, 24); 
-                c.fillStyle = '#00ff66'; c.fillRect(6, 6, 20, 20); // Suit armor
-                c.fillStyle = '#00ffff'; c.fillRect(14, 8, 12, 6);   // Glow Visor optics
-                c.fillStyle = '#110c24'; c.fillRect(6, 24, 6, 6); c.fillRect(20, 24, 6, 6); // Boots base
+        for(let i=0; i<12; i++) {
+            menuBlobs.push({
+                x: Math.random()*800, y: Math.random()*500,
+                vx: (Math.random()-0.5)*1.5, vy: (Math.random()-0.5)*1.5,
+                size: 15 + Math.random()*10,
+                color: ['#e63946','#f1faee','#a8dadc','#457b9d','#e9c46a'][Math.floor(Math.random()*5)]
             });
-            // Real Texture 2: High Density Computing Cluster Unit
-            textures.serverSkin = buildAsset(64, 64, (c) => {
-                c.fillStyle = '#150f2b'; c.fillRect(0, 0, 64, 64);
-                c.strokeStyle = '#2d1f54'; c.lineWidth = 2; c.strokeRect(2, 2, 60, 60);
-                for(let r=0; r<4; r++) { // Processing slots
-                    c.fillStyle = '#0b0718'; c.fillRect(6, 8 + r*14, 52, 8);
-                    c.fillStyle = '#00ff66'; c.fillRect(10, 11 + r*14, 4, 3); // Node active light
-                    c.fillStyle = '#ff0055'; c.fillRect(18, 11 + r*14, 4, 3); // Failure array status
-                }
-            });
-            // Real Texture 3: Corrupted Eliminator Impact Point Spatter
-            textures.eliminationMark = buildAsset(32, 32, (c) => {
-                c.fillStyle = '#ff3333';
-                c.beginPath(); c.arc(16, 16, 12, 0, Math.PI*2); c.fill();
-                c.beginPath(); c.arc(8, 10, 4, 0, Math.PI*2); c.fill(); // Micro spatters
-                c.beginPath(); c.arc(22, 24, 3, 0, Math.PI*2); c.fill();
-                c.fillStyle = '#fff'; c.font = '10px monospace'; c.fillText("❌", 10, 20);
-            });
-            // Real Texture 4: Alert Crisis Symbol
-            textures.alertIcon = buildAsset(120, 120, (c) => {
-                c.fillStyle = '#ffffff'; c.beginPath(); c.moveTo(60, 10); c.lineTo(110, 100); c.lineTo(10, 100); c.closePath(); c.fill();
-                c.fillStyle = '#ff0033'; c.beginPath(); c.moveTo(60, 18); c.lineTo(102, 94); c.lineTo(18, 94); c.closePath(); c.fill();
-                c.fillStyle = '#ffffff'; c.fillRect(55, 38, 10, 30); c.fillRect(55, 76, 10, 10); // Exclamation mark
-            });
-            document.getElementById('overlay-logo-canvas').getContext('2d').drawImage(textures.alertIcon, 0, 0);
         }
 
-        // --- MAP BOUNDS & COMPONENT CONFIGURATIONS ---
-        function assembleCoreWorld() {
-            gameState.nodes = [
-                { id: 1, x: 120, y: 80, w: 64, h: 64, status: 'Secure' },
-                { id: 2, x: 120, y: 280, w: 64, h: 64, status: 'Secure' },
-                { id: 3, x: 420, y: 80, w: 64, h: 64, status: 'Secure' },
-                { id: 4, x: 420, y: 280, w: 64, h: 64, status: 'Secure' }
-            ];
-        }
-
-        function pushLog(text, color = '#aaa') {
-            logsBox.innerHTML += `<div style="color:${color}">[DATA]: ${text}</div>`;
-            logsBox.scrollTop = logsBox.scrollHeight;
-        }
-
-        function showView(id) {
-            document.getElementById('gui-main').classList.add('hidden');
-            document.getElementById('gui-lobby').classList.add('hidden');
-            document.getElementById('gui-gameplay').classList.add('hidden');
+        function showScreen(id) {
+            document.querySelectorAll('.gui-screen').forEach(s => s.classList.add('hidden'));
             document.getElementById(id).classList.remove('hidden');
-        }
-        // --- WEBRTC DIRECT LINK LOBBY ROUTINES ---
-        function initiateAsHost() {
-            myUsername = document.getElementById('username-input').value.trim() || 'HostAgent';
-            amIHost = true; peer = new Peer();
-            peer.on('open', (id) => {
-                myId = id; document.getElementById('lobby-code-display').textContent = id;
-                document.getElementById('start-game-btn').classList.remove('hidden');
-                document.getElementById('host-wait-msg').classList.add('hidden');
-                addSelfToState('Host-Admin'); showView('gui-lobby'); rebuildLobbyList();
-            });
-            peer.on('connection', handleIncomingConnection);
+            if(id === 'screen-main') networkState.status = 'menu';
         }
 
-        function initiateAsClient() {
-            myUsername = document.getElementById('username-input').value.trim() || 'ClientAgent';
-            let targetHub = document.getElementById('join-code-input').value.trim();
-            if(!targetHub) return alert("Paste a valid Host Hub ID!");
-            amIHost = false; peer = new Peer();
-            peer.on('open', () => {
-                let conn = peer.connect(targetHub);
-                setupConnectionChannels(conn);
+        function saveProfileAndContinue() {
+            let val = document.getElementById('username-input').value.trim();
+            if(!val) return alert("Identify your nickname handle!");
+            myUsername = val;
+            showScreen('screen-main');
+        }
+
+        function openCustomizer() { showScreen('screen-customizer'); }
+        function openInstructions() { showScreen('screen-instructions'); }
+
+        function refreshPublicLobbies() {
+            browserList.innerHTML = `<div style="padding:20px; color:#aaa;">Polling room indexes...</div>`;
+            setTimeout(() => {
+                if(liveConnections.length === 0 && !amIHost) {
+                    browserList.innerHTML = `
+                        <div class="list-item">
+                            <span>🚀 <b>Sector-Beta (Classic)</b> [Active]</span>
+                            <button onclick="directJoinKey('SABOTAGE88')">CONNECT</button>
+                        </div>
+                        <div class="list-item">
+                            <span>🛰️ <b>Server-Farm-9</b> [Waiting]</span>
+                            <button onclick="directJoinKey('ROOM404')">CONNECT</button>
+                        </div>`;
+                } else {
+                    browserList.innerHTML = `<div style="padding:20px; color:#555;">No alternative active public hubs detected nearby. Host your own!</div>`;
+                }
+            }, 800);
+        }
+
+        function openLobbyBrowser() {
+            showScreen('screen-browser');
+            refreshPublicLobbies();
+        }
+
+        function directJoinKey(code) {
+            document.getElementById('join-code-input').value = code;
+            initiateMeshClient();
+        }
+
+        function createNewHostLobby() {
+            amIHost = true; peerInstance = new Peer();
+            peerInstance.on('open', (id) => {
+                myLobbyCode = id.substring(0,6).toUpperCase(); 
+                document.getElementById('lobby-key-display').textContent = myLobbyCode;
+                document.getElementById('launch-match-btn').classList.remove('hidden');
+                document.getElementById('client-wait-hint').classList.add('hidden');
+                registerPlayerSlot(peerInstance.id, myUsername);
+                showScreen('screen-lobby'); updateLobbyGUI();
+            });
+            peerInstance.on('connection', (conn) => {
+                liveConnections.push(conn);
+                conn.on('open', () => { conn.send({type:'welcome', state: networkState}); });
+                conn.on('data', (pack) => {
+                    if(pack.type === 'join') {
+                        registerPlayerSlot(conn.peer, pack.name); syncMeshState(); updateLobbyGUI();
+                    }
+                    if(pack.type === 'move') {
+                        let target = networkState.players[conn.peer];
+                        if(target) { target.x = pack.x; target.y = pack.y; syncMeshState(); }
+                    }
+                    if(pack.type === 'actionClick') { evaluateActionQuery(conn.peer); }
+                });
+            });
+        }
+        function initiateMeshClient() {
+            let code = document.getElementById('join-code-input').value.trim().toUpperCase();
+            if(!code) return alert("Missing Room Key!");
+            amIHost = false; peerInstance = new Peer();
+            peerInstance.on('open', () => {
+                let targetConnection = peerInstance.connect(code.toLowerCase());
+                targetConnection.on('open', () => {
+                    targetConnection.send({type:'join', name: myUsername});
+                    showScreen('screen-lobby');
+                });
+                targetConnection.on('data', (pack) => {
+                    if(pack.type === 'sync') {
+                        networkState = pack.state; updateLobbyGUI();
+                        if(networkState.status === 'match' && document.getElementById('gui-gameplay').classList.contains('hidden')) {
+                            document.getElementById('hud-overlay').classList.remove('hidden');
+                            document.getElementById('action-btn-layout').classList.remove('hidden');
+                            showScreen('gui-gameplay');
+                        }
+                    }
+                    if(pack.type === 'alertBody') {
+                        document.getElementById('report-string-msg').textContent = pack.msg;
+                        document.getElementById('body-report-overlay').classList.remove('hidden');
+                    }
+                });
             });
         }
 
-        function handleIncomingConnection(conn) {
-            setupConnectionChannels(conn);
-        }
-
-        function setupConnectionChannels(conn) {
-            connections.push(conn);
-            conn.on('open', () => {
-                if(!amIHost) { showView('gui-lobby'); pushLog("Paired directly with primary Host cluster."); }
-                conn.send({ type: 'handshake', name: myUsername });
-            });
-            conn.on('data', (pack) => {
-                if(amIHost) processDataAsHost(conn, pack);
-                else processDataAsClient(pack);
-            });
-        }
-
-        function addSelfToState(forcedRole = null) {
-            gameState.players[peer.id] = {
-                id: peer.id, name: myUsername, x: 80 + Math.random()*80, y: 180 + Math.random()*80,
-                alive: true, role: forcedRole || (Math.random() > 0.35 ? 'SysAdmin' : 'Infiltrator')
+        function registerPlayerSlot(id, name) {
+            networkState.players[id] = {
+                id: id, name: name, x: 150 + Math.random()*100, y: 200 + Math.random()*100,
+                alive: true, role: Object.keys(networkState.players).length === 0 ? 'Impostor' : 'Crewmate',
+                color: ['#e63946','#457b9d','#52b788','#f3722c'][Object.keys(networkState.players).length % 4],
+                skin: skinSelect.value
             };
         }
 
-        function rebuildLobbyList() {
-            const container = document.getElementById('player-list-box');
-            container.innerHTML = Object.values(gameState.players).map(p => `• 🕵️‍♂️ Agent: <b>${p.name}</b>`).join('<br>');
+        function updateLobbyGUI() {
+            lobbyCrewList.innerHTML = Object.values(networkState.players).map(p => `• 🛠️ Agent Connection: <b>${p.name}</b> (${p.role})`).join('<br>');
+            document.getElementById('hud-coins').textContent = Object.values(networkState.players).length * 10;
         }
 
-        // --- PIPELINE HANDLERS ---
-        function processDataAsHost(conn, pack) {
-            if(pack.type === 'handshake') {
-                gameState.players[conn.peer] = {
-                    id: conn.peer, name: pack.name, x: 200, y: 200, alive: true,
-                    role: Math.random() > 0.35 ? 'SysAdmin' : 'Infiltrator'
-                };
-                rebuildLobbyList(); syncGlobalState();
-            }
-            if(pack.type === 'input') {
-                let p = gameState.players[conn.peer];
-                if(p && p.alive) { p.x = pack.x; p.y = pack.y; syncGlobalState(); }
-            }
-            if(pack.type === 'action') { handleActionRequest(conn.peer); }
-            if(pack.type === 'closeReport') { forwardToMesh({ type: 'hideOverlay' }); }
+        function syncMeshState() {
+            liveConnections.forEach(c => { if(c.open) c.send({type:'sync', state: networkState}); });
         }
 
-        function processDataAsClient(pack) {
-            if(pack.type === 'sync') {
-                gameState = pack.state;
-                if(gameState.status === 'active' && document.getElementById('gui-gameplay').classList.contains('hidden')) {
-                    showView('gui-gameplay');
+        function hostInitiateMatch() {
+            networkState.status = 'match';
+            networkState.nodes = [
+                {id: 1, x: 200, y: 120, broken: false}, {id: 2, x: 550, y: 320, broken: false}
+            ];
+            document.getElementById('hud-room').textContent = myLobbyCode;
+            document.getElementById('hud-overlay').classList.remove('hidden');
+            document.getElementById('action-btn-layout').classList.remove('hidden');
+            syncMeshState(); showScreen('gui-gameplay');
+        }
+
+        let actionKeys = {};
+        window.addEventListener('keydown', (e) => { actionKeys[e.code] = true; });
+        window.addEventListener('keyup', (e) => { actionKeys[e.code] = false; });
+
+        function engineCoreProcessLoop() {
+            if(networkState.status === 'menu' || networkState.status === 'lobby') {
+                menuBlobs.forEach(b => {
+                    b.x += b.vx; b.y += b.vy;
+                    if(b.x < -30) b.x = 830; if(b.x > 830) b.x = -30;
+                    if(b.y < -30) b.y = 530; if(b.y > 530) b.y = -30;
+                });
+                return;
+            }
+
+            if(networkState.status === 'match') {
+                let identity = networkState.players[peerInstance.id];
+                if(!identity || !identity.alive) return;
+
+                let ox = identity.x, oy = identity.y;
+                if(actionKeys['KeyW'] || actionKeys['ArrowUp']) identity.y -= 3;
+                if(actionKeys['KeyS'] || actionKeys['ArrowDown']) identity.y += 3;
+                if(actionKeys['KeyA'] || actionKeys['ArrowLeft']) identity.x -= 3;
+                if(actionKeys['KeyD'] || actionKeys['ArrowRight']) identity.x += 3;
+
+                if(identity.x  780) identity.x = 780;
+                if(identity.y  480) identity.y = 480;
+
+                if(identity.x !== ox || identity.y !== oy) {
+                    if(amIHost) syncMeshState();
+                    else liveConnections.forEach(c => c.send({type:'move', x: identity.x, y: identity.y}));
                 }
-                rebuildLobbyList();
-            }
-            if(pack.type === 'log') { pushLog(pack.msg, pack.color); }
-            if(pack.type === 'reportOverlay') {
-                document.getElementById('report-details').textContent = pack.details;
-                bodyOverlay.classList.remove('hidden');
-            }
-            if(pack.type === 'hideOverlay') { bodyOverlay.classList.add('hidden'); }
+
+                let closeNode = false;
+                networkState.nodes.forEach(n => { if(Math.hypot(n.x - identity.x, n.y - identity.y)  c.send({type:'actionClick'}));
         }
 
-        function syncGlobalState() {
-            forwardToMesh({ type: 'sync', state: gameState });
-        }
-
-        function forwardToMesh(data) {
-            connections.forEach(c => { if(c.open) c.send(data); });
-        }
-
-        function hostLaunchEngine() {
-            gameState.status = 'active'; assembleCoreWorld(); syncGlobalState(); showView('gui-gameplay');
-            pushLog("System deployment live. Locate malicious node injection signatures.", 'var(--matrix-green)');
-        }
-
-        // --- CORE RENDER CANVAS ACTIONS ---
-        let localKeys = {};
-        window.addEventListener('keydown', (e) => { localKeys[e.code] = true; });
-        window.addEventListener('keyup', (e) => { localKeys[e.code] = false; });
-
-        function runLocalPhysicsTick() {
-            if (gameState.status !== 'active') return;
-            let me = gameState.players[peer.id];
-            if (!me || !me.alive) return;
-
-            let origX = me.x, origY = me.y;
-            if (localKeys['ArrowUp'] || localKeys['KeyW']) me.y -= 3.5;
-            if (localKeys['ArrowDown'] || localKeys['KeyS']) me.y += 3.5;
-            if (localKeys['ArrowLeft'] || localKeys['KeyA']) me.x -= 3.5;
-            if (localKeys['ArrowRight'] || localKeys['KeyD']) me.x += 3.5;
-
-            // Box Wall Collisions against standard server stacks
-            gameState.nodes.forEach(n => {
-                if (me.x + 16 > n.x && me.x - 16 < n.x + n.w && me.y + 16 > n.y && me.y - 16 < n.y + n.h) {
-                    me.x = origX; me.y = origY; // Snap back bounds collision lock
-                }
-            });
-
-            // Update remote peer registries
-            if(me.x !== origX || me.y !== origY) {
-                if(amIHost) syncGlobalState();
-                else socketSend({ type: 'input', x: me.x, y: me.y });
-            }
-
-            // Context contextual trigger buttons check
-            let contextText = "💻 INTERACT DEVICE";
-            if(me.role === 'Infiltrator') contextText = "⚡ EXTERMINATE TARGET / CORRUPT";
-            
-            // Check if walking near dropped dead player instances
-            Object.values(gameState.players).forEach(other => {
-                if(!other.alive && Math.hypot(me.x - other.x, me.y - other.y) < 50) {
-                    contextText = "🚨 REPORT CASUALTY LOG";
-                }
-            });
-            actionBtn.textContent = contextText;
-        }
-
-        function socketSend(data) {
-            if(connections[0] && connections[0].open) connections[0].send(data);
-        }
-
-        function executeContextAction() {
-            if(amIHost) handleActionRequest(peer.id);
-            else socketSend({ type: 'action' });
-        }
-
-        function handleActionRequest(playerId) {
-            let user = gameState.players[playerId];
+        function evaluateActionQuery(pid) {
+            let user = networkState.players[pid];
             if(!user || !user.alive) return;
 
-            // 1. Check Dead Body Report Conditions
-            let bodyFound = false;
-            Object.values(gameState.players).forEach(other => {
-                if(!other.alive && Math.hypot(user.x - other.x, user.y - other.y) < 60) {
-                    bodyFound = true;
-                    forwardToMesh({ type: 'reportOverlay', details: `Discovered by ${user.name}` });
-                    // Trigger overlay locally for host immediately
-                    document.getElementById('report-details').textContent = `Discovered by ${user.name}`;
-                    bodyOverlay.classList.remove('hidden');
-                    forwardToMesh({ type: 'log', msg: `CRITICAL DISCOVERY: ${user.name} reported a body trace!`, color: 'var(--cyber-red)' });
+            let reported = false;
+            Object.values(networkState.players).forEach(other => {
+                if(!other.alive && Math.hypot(user.x - other.x, user.y - other.y) < 70) {
+                    reported = true;
+                    let msg = `Crisis trace initiated by ${user.name}!`;
+                    document.getElementById('report-string-msg').textContent = msg;
+                    document.getElementById('body-report-overlay').classList.remove('hidden');
+                    liveConnections.forEach(c => c.send({type:'alertBody', msg: msg}));
                 }
             });
-            if(bodyFound) return;
+            if(reported) return;
 
-            // 2. Infiltrator Exterminate/Infect Checks
-            if(user.role === 'Infiltrator') {
-                Object.values(gameState.players).forEach(other => {
-                    if(other.id !== playerId && other.alive && Math.hypot(user.x - other.x, user.y - other.y) < 45) {
-                        other.alive = false; forwardToMesh({ type: 'log', msg: `ALERT: Fatal telemetry signature disconnect registered.`, color: 'var(--cyber-red)' });
+            if(user.role === 'Impostor') {
+                Object.values(networkState.players).forEach(other => {
+                    if(other.id !== pid && other.alive && Math.hypot(user.x - other.x, user.y - other.y) < 50) {
+                        other.alive = false;
                     }
                 });
             }
-
-            // 3. Node Corrupt/Lock systems processing
-            gameState.nodes.forEach(n => {
-                if(Math.hypot((n.x+32) - user.x, (n.y+32) - user.y) < 70) {
-                    n.status = user.role === 'Infiltrator' ? 'Infected' : 'Secure';
-                    forwardToMesh({ type: 'log', msg: `Terminal Node link ID-${n.id} updated to [${n.status}] by ${user.name}`, color: 'yellow' });
-                }
-            });
-            syncGlobalState();
+            syncMeshState();
         }
 
-        function closeReportOverlay() {
-            if(amIHost) { bodyOverlay.classList.add('hidden'); forwardToMesh({ type: 'hideOverlay' }); }
-            else socketSend({ type: 'closeReport' });
+        function dismissCrisisOverlay() {
+            document.getElementById('body-report-overlay').classList.add('hidden');
+            liveConnections.forEach(c => c.send({type:'alertBodyClose'}));
         }
 
-        function drawGameFrame() {
-            ctx.clearRect(0,0,600,450);
-            // Render Background Grid floor arrays
-            ctx.fillStyle='#07050f'; ctx.fillRect(0,0,600,450);
-            ctx.strokeStyle='#130e26'; ctx.lineWidth=1;
-            for(let x=0;x<600;x+=30){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,450);ctx.stroke();}
-            for(let y=0;y<450;y+=30){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(600,y);ctx.stroke();}
-
-            // Draw Nodes using textures
-            if(gameState.nodes) {
-                gameState.nodes.forEach(n => {
-                    ctx.drawImage(textures.serverSkin, n.x, n.y);
-                    ctx.fillStyle = n.status === 'Secure' ? 'var(--matrix-green)' : 'var(--cyber-red)';
-                    ctx.fillRect(n.x+4, n.y+4, 6, 6); // Status LED marker
-                });
+        function drawClassicCharacter(c, x, y, type, color, isDead, name) {
+            c.save();
+            if(isDead) {
+                c.fillStyle = '#777777'; c.fillRect(x-12, y, 24, 14);
+                c.fillStyle = '#ffffff'; c.beginPath(); c.arc(x, y, 6, 0, Math.PI, true); c.fill();
+                c.restore(); return;
             }
+            if(type === 'blob') {
+                let squish = Math.sin(Date.now() * 0.007) * 2;
+                c.fillStyle = color; c.beginPath(); c.ellipse(x, y + squish/2, 16, 18 - squish, 0, 0, Math.PI*2); c.fill();
+                c.fillStyle = '#000'; c.beginPath(); c.arc(x-5, y-2, 2, 0, Math.PI*2); c.arc(x+3, y-2, 2, 0, Math.PI*2); c.fill();
+            } else {
+                c.fillStyle = color; c.fillRect(x-12, y-16, 24, 28); c.fillRect(x-16, y-8, 5, 16);
+                c.fillRect(x-12, y+12, 8, 8); c.fillRect(x+4, y+12, 8, 8);
+                c.fillStyle = '#a8dadc'; c.fillRect(x-2, y-10, 12, 8);
+            }
+            if(name) {
+                c.fillStyle = '#fff'; c.font = 'bold 11px Arial'; c.textAlign='center'; c.fillText(name, x, y - 24);
+            }
+            c.restore();
+        }
 
-            // Draw Players using loaded animated texture sheets
-            Object.values(gameState.players).forEach(p => {
-                if(p.alive) {
-                    ctx.drawImage(textures.agentSkin, p.x-16, p.y-16);
-                    ctx.fillStyle = '#fff'; ctx.font = '10px monospace';
-ctx.fillText(p.name, p.x - 20, p.y - 20);} else {ctx.drawImage(textures.eliminationMark, p.x-16, p.y-16);ctx.fillStyle = '#666'; ctx.font = '9px monospace'; ctx.fillText(${p.name} [DEAD], p.x-24, p.y-18);}});}// Initialize frame clock tickssetInterval(() => { runLocalPhysicsTick(); drawGameFrame(); }, 1000 / 60);cookTextureAssets();
+        function renderFramePipeline() {
+            ctx.clearRect(0,0,800,500);
+            if(networkState.status === 'menu' || networkState.status === 'lobby') {
+                menuBlobs.forEach(b => { drawClassicCharacter(ctx, b.x, b.y, skinSelect.value, b.color, false, ""); });
+                return;
+            }
+            ctx.fillStyle = '#0d1b2a'; ctx.fillRect(0,0,800,500);
+            ctx.fillStyle = '#415a77';
+            networkState.nodes.forEach(n => {
+                ctx.fillRect(n.x - 30, n.y - 30, 60, 60);
+                ctx.fillStyle = '#000'; ctx.fillRect(n.x-20, n.y-20, 40, 40);
+                ctx.fillStyle = '#00ff66'; ctx.fillRect(n.x - 5, n.y - 5, 10, 10);
+            });
+            Object.values(networkState.players).forEach(p => {
+                drawClassicCharacter(ctx, p.x, p.y, p.skin, p.color, !p.alive, p.name);
+            });
+        }
+
+        setInterval(() => { engineCoreProcessLoop(); renderFramePipeline(); }, 1000 / 60);
+    </script>
+</body>
+</html>
