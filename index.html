@@ -2,456 +2,396 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Clicker Dash: Runner Edition</title>
+    <title>Double Agent: Deep Fake WebRTC</title>
     <style>
         :root {
-            --neon-pink: #ff007f;
-            --neon-blue: #00ffff;
-            --bg-dark: #0a0612;
+            --matrix-green: #00ff66;
+            --cyber-red: #ff3333;
+            --dark-core: #06040a;
+            --panel-bg: #110e1c;
         }
         body {
-            margin: 0;
-            background: var(--bg-dark);
-            color: #fff;
+            margin: 0; background: var(--dark-core); color: #fff;
             font-family: 'Courier New', Courier, monospace;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            user-select: none;
+            display: flex; flex-direction: column; align-items: center; user-select: none;
         }
-        #hud-top {
-            display: flex;
-            gap: 40px;
-            font-size: 24px;
-            color: #ffd700;
-            margin: 15px 0;
-            text-shadow: 0 0 10px #ffd700;
-        }
-        #game-frame {
-            position: relative;
-            width: 800px;
-            height: 450px;
-            background: #0d0618;
-            border: 4px solid var(--neon-pink);
-            box-shadow: 0 0 30px rgba(255, 0, 127, 0.4);
-            border-radius: 10px;
-            overflow: hidden;
-        }
-        .screen {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(10, 6, 18, 0.95);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            gap: 15px;
-            z-index: 10;
+        h1 { color: var(--matrix-green); text-shadow: 0 0 10px var(--matrix-green); margin: 15px 0 5px 0; font-size: 26px; }
+        
+        .gui-screen {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            position: absolute; top:0; left:0; width:100vw; height:100vh; background: var(--dark-core); gap: 15px; z-index: 10;
         }
         .hidden { display: none !important; }
-        h2 {
-            color: var(--neon-blue);
-            text-shadow: 0 0 10px var(--neon-blue);
-            font-size: 32px;
-            margin: 0 0 10px 0;
+        .window-box {
+            background: var(--panel-bg); border: 3px solid #221b38; padding: 30px; border-radius: 12px; width: 360px;
+            box-shadow: 0 0 30px rgba(0, 255, 102, 0.1); text-align: center;
         }
-        button {
-            width: 260px;
-            padding: 12px;
-            font-size: 16px;
-            font-weight: bold;
-            background: #2b1a4a;
-            color: #fff;
-            border: 2px solid var(--neon-pink);
-            cursor: pointer;
-            border-radius: 6px;
-            text-align: center;
-            transition: transform 0.1s, background 0.1s;
+        h2 { color: var(--matrix-green); text-shadow: 0 0 8px var(--matrix-green); margin-top: 0; }
+        input, button { width: 100%; padding: 12px; font-size: 14px; font-family: monospace; border-radius: 6px; box-sizing: border-box; margin-top: 10px; }
+        input { background: #090712; border: 1px solid var(--matrix-green); color: #fff; }
+        button { background: #1c172e; border: 2px solid var(--matrix-green); color: #fff; cursor: pointer; font-weight: bold; }
+        button:hover { background: var(--matrix-green); color: #000; box-shadow: 0 0 10px var(--matrix-green); }
+        
+        #game-interface { display: flex; gap: 20px; padding: 20px; margin-top: 20px; }
+        #canvas-frame { position: relative; border: 2px solid var(--matrix-green); background: #090712; border-radius: 6px; width:600px; height:450px; }
+        #canvas-render { display: block; }
+        
+        /* Dead Body Crisis Flash Overlay Overlay */
+        #body-report-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255, 0, 50, 0.9); display: flex; flex-direction: column;
+            justify-content: center; align-items: center; z-index: 50;
+            animation: pulseAlert 0.5s infinite alternate;
         }
-        button:hover { background: var(--neon-pink); color: #000; box-shadow: 0 0 10px var(--neon-pink); }
-        button:active { transform: scale(0.95); }
-
-        .key-row {
-            display: flex;
-            justify-content: space-between;
-            width: 320px;
-            font-size: 18px;
-            margin: 5px 0;
+        @keyframes pulseAlert {
+            from { background: rgba(180, 0, 30, 0.9); }
+            to { background: rgba(255, 0, 50, 0.95); }
         }
-        .key-btn {
-            width: 120px;
-            padding: 5px;
-            font-size: 14px;
-            border-color: var(--neon-blue);
-        }
-        #game-canvas {
-            display: block;
-            width: 100%;
-            height: 100%;
+        .report-banner {
+            font-size: 36px; font-weight: bold; color: #fff; text-shadow: 0 0 20px #000;
+            letter-spacing: 2px; text-transform: uppercase; margin-bottom: 20px;
         }
     </style>
+    <!-- Loads PeerJS directly inside file to bypass building separate cloud network servers -->
+    <script src="https://unpkg.com"></script>
 </head>
 <body>
 
-    <div id="hud-top">
-        <div>💰 Coins: <span id="coin-count">0</span></div>
-        <div>🏁 Checkpoints: <span id="cp-count">0</span></div>
-        <div>🎯 Mode: <span id="current-mode">None</span></div>
-    </div>
+    <h1>🕵️‍♂️ DOUBLE AGENT: NET FORWARD</h1>
     
-    <div id="game-frame">
-        <canvas id="game-canvas" width="800" height="450"></canvas>
-
-        <div id="menu-main" class="screen">
-            <h2>CLICKER DASH</h2>
-            <button onclick="showScreen('menu-modes')">▶️ PLAY GAME</button>
-            <button onclick="showScreen('menu-shop')">🛒 SHOP ABILITIES</button>
-            <button onclick="showScreen('menu-settings')">⚙️ SETTINGS</button>
-            <button onclick="toggleFullscreen()">🖵 FULLSCREEN</button>
-        </div>
-
-        <div id="menu-modes" class="screen hidden">
-            <h2>SELECT DIFFICULTY</h2>
-            <button onclick="setDifficulty('Level Easy')" style="border-color: #00ff00;">🟢 LEVEL EASY</button>
-            <button onclick="setDifficulty('Medium')" style="border-color: #ff9d00;">🟡 MEDIUM</button>
-            <button onclick="setDifficulty('Chaos')" style="border-color: #ff3333;">🔴 CHAOS</button>
-            <button onclick="showScreen('menu-main')" style="border-color: #888;">⬅️ BACK</button>
-        </div>
-
-        <div id="menu-shop" class="screen hidden">
-            <h2>ABILITY SHOP</h2>
-            <button id="shop-grapple" onclick="buyPowerUp('grapple', 15)">🪝 Grapple Hook<br>Cost: 15 coins</button>
-            <button id="shop-magnet" onclick="buyPowerUp('magnet', 35)">🧲 Coin Magnet<br>Cost: 35 coins</button>
-            <button id="shop-dash" onclick="buyPowerUp('dash', 50)">🚀 Dash Boost Ability<br>Cost: 50 coins</button>
-            <button onclick="showScreen('menu-main')" style="border-color: #888;">⬅️ BACK</button>
-        </div>
-
-        <div id="menu-settings" class="screen hidden">
-            <h2>CUSTOM KEYBINDS</h2>
-            <div style="color: #aaa; font-size: 12px; margin-bottom: 10px;">Click an option then press any key to rebind</div>
-            <div class="key-row"><span>Jump:</span><button class="key-btn" id="btn-jump" onclick="rebindAction('jump')">Space</button></div>
-            <div class="key-row"><span>Duck/Slide:</span><button class="key-btn" id="btn-duck" onclick="rebindAction('duck')">KeyE</button></div>
-            <div class="key-row"><span>Punch Object:</span><button class="key-btn" id="btn-punch" onclick="rebindAction('punch')">KeyR</button></div>
-            <div class="key-row"><span>Grapple:</span><button class="key-btn" id="btn-hook" onclick="rebindAction('hook')">ShiftLeft</button></div>
-            <div class="key-row"><span>Dash Ability:</span><button class="key-btn" id="btn-teleport" onclick="rebindAction('teleport')">KeyQ</button></div>
-            <button onclick="showScreen('menu-main')" style="border-color: #888; margin-top: 15px;">⬅️ BACK</button>
-        </div>
-
-        <div id="menu-pause" class="screen hidden">
-            <h2>GAME PAUSED</h2>
-            <button onclick="resumeGame()">▶️ RESUME</button>
-            <button onclick="quitToMenu()">🏠 QUIT TO MENU</button>
-        </div>
-
-        <div id="menu-gameover" class="screen hidden">
-            <h2 style="color: #ff3333; text-shadow: 0 0 10px #ff3333;">💥 CRASHED!</h2>
-            <p id="gameover-reason" style="color: #aaa; margin: 0;">Hit an obstacle</p>
-            <button onclick="showScreen('menu-modes')">🔄 TRY AGAIN</button>
-            <button onclick="quitToMenu()">🏠 MAIN MENU</button>
+    <!-- MAIN INTERFACE MAIN MENU PANEL -->
+    <div id="gui-main" class="gui-screen">
+        <div class="window-box">
+            <h2>NETWORK GATEWAY</h2>
+            <input type="text" id="username-input" placeholder="ENTER PLAYER HANDLE...">
+            <button onclick="initiateAsHost()">🖥️ STANDUP HOST INSTANCE</button>
+            <input type="text" id="join-code-input" placeholder="PASTE TARGET HUB ID..." style="margin-top:25px;">
+            <button onclick="initiateAsClient()">📡 LINK REMOTE HUB ID</button>
         </div>
     </div>
-    <script>
-        let gameData = {
-            coins: 0,
-            checkpoints: 0,
-            powerups: { grapple: false, magnet: false, dash: false },
-            keybinds: {
-                jump: 'Space',
-                duck: 'KeyE',
-                punch: 'KeyR',
-                hook: 'ShiftLeft',
-                teleport: 'KeyQ'
-            }
-        };
 
-        let currentDifficulty = 'Level Easy';
-        let isGameRunning = false;
-        let activeRebindAction = null;
-
-        const canvas = document.getElementById('game-canvas');
-        const ctx = canvas.getContext('2d');
-        const coinCountEl = document.getElementById('coin-count');
-        const cpCountEl = document.getElementById('cp-count');
-        const currentModeEl = document.getElementById('current-mode');
-        const gameFrame = document.getElementById('game-frame');
-
-        let player = {
-            x: 100, y: 330, w: 40, h: 60,
-            vy: 0, gravity: 1.2, jumpForce: -18,
-            isJumping: false, isDucking: false, activeGrapple: false
-        };
-
-        let skyStars = [];
-        let cityscape = [];
-        let obstacles = [];
-        let items = [];
-        let gameSpeed = 5;
-        let distanceTraveled = 0;
-
-        function initWorldEnvironment() {
-            skyStars = []; cityscape = []; obstacles = []; items = [];
-            distanceTraveled = 0; gameData.checkpoints = 0;
-            cpCountEl.textContent = 0;
-
-            for(let i=0; i<40; i++) {
-                skyStars.push({x: Math.random()*800, y: Math.random()*200, size: Math.random()*2});
-            }
-            for(let i=0; i<6; i++) {
-                cityscape.push({
-                    x: i * 160,
-                    y: 150 + Math.random()*120,
-                    w: 120 + Math.random()*40,
-                    color: '#1a102f'
-                });
-            }
-        }
-
-        function showScreen(screenId) {
-            document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
-            if(screenId) document.getElementById(screenId).classList.remove('hidden');
-        }
-
-        function setDifficulty(mode) {
-            currentDifficulty = mode;
-            currentModeEl.textContent = mode;
-            
-            if(mode === 'Level Easy') gameSpeed = 4.5;
-            else if(mode === 'Medium') gameSpeed = 7.5;
-            else if(mode === 'Chaos') gameSpeed = 13;
-
-            initWorldEnvironment();
-            showScreen(null);
-            isGameRunning = true;
-        }
-
-        function triggerGameOver(reason) {
-            isGameRunning = false;
-            document.getElementById('gameover-reason').textContent = reason;
-            showScreen('menu-gameover');
-        }
-
-        function resumeGame() {
-            isGameRunning = true;
-            showScreen(null);
-        }
-
-        function quitToMenu() {
-            isGameRunning = false;
-            showScreen('menu-main');
-        }
-
-        function toggleFullscreen() {
-            if (!document.fullscreenElement) {
-                gameFrame.requestFullscreen().catch(err => {alert(err.message);});
-            } else {
-                document.exitFullscreen();
-            }
-        }
-
-        function rebindAction(action) {
-            activeRebindAction = action;
-            document.getElementById(`btn-${action}`).textContent = '⏳ Press...';
-        }
-
-        function updatePhysicsLoop() {
-            if (!isGameRunning) return;
-
-            distanceTraveled += gameSpeed;
-            if(Math.floor(distanceTraveled) % 2500 === 0) {
-                gameData.checkpoints++;
-                cpCountEl.textContent = gameData.checkpoints;
-            }
-
-            if (player.activeGrapple) {
-                player.y -= 10;
-                if(player.y <= 100) { player.y = 100; player.activeGrapple = false; }
-            } else {
-                player.vy += player.gravity;
-                player.y += player.vy;
-            }
-
-            if(player.y >= 330) {
-                player.y = 330;
-                player.vy = 0;
-                player.isJumping = false;
-            }
-
-            if(Math.random() < 0.015 && obstacles.length < 3) {
-                let typeRand = Math.random();
-                let obsType = 'tall'; 
-                if(typeRand > 0.5) obsType = 'low'; 
-                if(typeRand > 0.8) obsType = 'box'; 
-
-                obstacles.push({
-                    x: 850,
-                    y: obsType === 'low' ? 290 : 330,
-                    w: 30, h: obsType === 'low' ? 30 : 60,
-                    type: obsType
-                });
-            }
-
-            if(Math.random() < 0.02 && items.length < 5) {
-                items.push({ x: 850, y: 250 + Math.random()*80, w: 20, collected: false });
-            }
-
-            cityscape.forEach(b => {
-                b.x -= gameSpeed * 0.3;
-                if(b.x + b.w < 0) b.x = 850;
-            });
-
-            obstacles.forEach((o, index) => {
-                o.x -= gameSpeed;
+    <!-- LOBBY HUB WAITING ROOM GRID -->
+    <div id="gui-lobby" class="gui-screen hidden">
+        <div class="window-box">
+            <h2>HUB CODE: <span id="lobby-code-display" style="color:#fff; font-size:14px;">GENERATING...</span></h2>
+            <p style="font-size:11px; color:#888;">Copy this hub ID code and send to friends</p>
+            <div id="player-list-box" style="text-align:left; background:#090712; padding:15px; border-radius:6px; min-height:80px; font-size:13px;">
+                Awakening relay mesh channels...
+            </div>
+            <button id="start-game-btn" class="hidden" onclick="hostLaunchEngine()" style="border-color:var(--cyber-red); margin-top:20px;">🎬 COMMENCE OPERATIONS</button>
+            <p id="host-wait-msg" style="font-size:12px; color:#666;">Synchronizing configurations to Master Hub...</p>
+        </div>
+    </div>
+    <!-- ACTION SPACE VIEW LAYER -->
+    <div id="gui-gameplay" class="hidden">
+        <div id="game-interface">
+            <div id="canvas-frame">
+                <canvas id="canvas-render" width="600" height="450"></canvas>
                 
-                let px = player.x, py = player.isDucking ? player.y + 30 : player.y;
-                let pw = player.w, ph = player.isDucking ? 30 : player.h;
+                <!-- Dead Body Overlay GUI -->
+                <div id="body-report-overlay" class="hidden">
+                    <canvas id="overlay-logo-canvas" width="120" height="120"></canvas>
+                    <div class="report-banner">⚠️ Body Discovered! ⚠️</div>
+                    <div id="report-details" style="font-size: 18px; font-weight: bold; background: #000; padding: 8px 20px; border-radius: 4px;">CRITICAL SYSTEM EMERGENCY MUTINY</div>
+                    <button onclick="closeReportOverlay()" style="width:160px; margin-top:20px; border-color:#fff; background:#000;">OK</button>
+                </div>
+            </div>
 
-                if (px < o.x + o.w && px + pw > o.x && py < o.y + o.h && py + ph > o.y) {
-                    triggerGameOver(o.type === 'low' ? "Failed to slide under barrier!" : "Crashed into barrier building structure!");
+            <div style="width:240px; display:flex; flex-direction:column; gap:12px;">
+                <div style="background:var(--panel-bg); padding:15px; border:2px solid #221b38; border-radius:6px;">
+                    <div style="color:var(--matrix-green); font-weight:bold; margin-bottom:10px; font-size:13px;">ENCRYPTED TELEMETRY DATA FEED</div>
+                    <div id="game-logs" style="height:260px; overflow-y:auto; font-size:11px; color:#b5b0cd; line-height:1.4;"></div>
+                </div>
+                <button id="kill-interact-btn" onclick="executeContextAction()" style="border-color:var(--cyber-red);">💻 INTERACT / SABOTAGE</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas-render');
+        const ctx = canvas.getContext('2d');
+        const logsBox = document.getElementById('game-logs');
+        const actionBtn = document.getElementById('kill-interact-btn');
+        const bodyOverlay = document.getElementById('body-report-overlay');
+
+        let peer = null; let connections = []; let myId = "";
+        let amIHost = false; let myUsername = "";
+        let gameState = { players: {}, nodes: [], status: 'lobby' };
+
+        // --- ARTISTIC TEXTURE BLUEPRINT GENERATOR HOOKS ---
+        let textures = { agentSkin: null, serverSkin: null, eliminationMark: null, alertIcon: null };
+
+        function cookTextureAssets() {
+            function buildAsset(w, h, paint) {
+                let tc = document.createElement('canvas'); tc.width = w; tc.height = h;
+                paint(tc.getContext('2d')); return tc;
+            }
+            // Real Texture 1: Futuristic Visor Cyber Agent
+            textures.agentSkin = buildAsset(32, 32, (c) => {
+                c.fillStyle = '#110c24'; c.fillRect(4, 4, 24, 24); 
+                c.fillStyle = '#00ff66'; c.fillRect(6, 6, 20, 20); // Suit armor
+                c.fillStyle = '#00ffff'; c.fillRect(14, 8, 12, 6);   // Glow Visor optics
+                c.fillStyle = '#110c24'; c.fillRect(6, 24, 6, 6); c.fillRect(20, 24, 6, 6); // Boots base
+            });
+            // Real Texture 2: High Density Computing Cluster Unit
+            textures.serverSkin = buildAsset(64, 64, (c) => {
+                c.fillStyle = '#150f2b'; c.fillRect(0, 0, 64, 64);
+                c.strokeStyle = '#2d1f54'; c.lineWidth = 2; c.strokeRect(2, 2, 60, 60);
+                for(let r=0; r<4; r++) { // Processing slots
+                    c.fillStyle = '#0b0718'; c.fillRect(6, 8 + r*14, 52, 8);
+                    c.fillStyle = '#00ff66'; c.fillRect(10, 11 + r*14, 4, 3); // Node active light
+                    c.fillStyle = '#ff0055'; c.fillRect(18, 11 + r*14, 4, 3); // Failure array status
                 }
-                if(o.x < -50) obstacles.splice(index, 1);
+            });
+            // Real Texture 3: Corrupted Eliminator Impact Point Spatter
+            textures.eliminationMark = buildAsset(32, 32, (c) => {
+                c.fillStyle = '#ff3333';
+                c.beginPath(); c.arc(16, 16, 12, 0, Math.PI*2); c.fill();
+                c.beginPath(); c.arc(8, 10, 4, 0, Math.PI*2); c.fill(); // Micro spatters
+                c.beginPath(); c.arc(22, 24, 3, 0, Math.PI*2); c.fill();
+                c.fillStyle = '#fff'; c.font = '10px monospace'; c.fillText("❌", 10, 20);
+            });
+            // Real Texture 4: Alert Crisis Symbol
+            textures.alertIcon = buildAsset(120, 120, (c) => {
+                c.fillStyle = '#ffffff'; c.beginPath(); c.moveTo(60, 10); c.lineTo(110, 100); c.lineTo(10, 100); c.closePath(); c.fill();
+                c.fillStyle = '#ff0033'; c.beginPath(); c.moveTo(60, 18); c.lineTo(102, 94); c.lineTo(18, 94); c.closePath(); c.fill();
+                c.fillStyle = '#ffffff'; c.fillRect(55, 38, 10, 30); c.fillRect(55, 76, 10, 10); // Exclamation mark
+            });
+            document.getElementById('overlay-logo-canvas').getContext('2d').drawImage(textures.alertIcon, 0, 0);
+        }
+
+        // --- MAP BOUNDS & COMPONENT CONFIGURATIONS ---
+        function assembleCoreWorld() {
+            gameState.nodes = [
+                { id: 1, x: 120, y: 80, w: 64, h: 64, status: 'Secure' },
+                { id: 2, x: 120, y: 280, w: 64, h: 64, status: 'Secure' },
+                { id: 3, x: 420, y: 80, w: 64, h: 64, status: 'Secure' },
+                { id: 4, x: 420, y: 280, w: 64, h: 64, status: 'Secure' }
+            ];
+        }
+
+        function pushLog(text, color = '#aaa') {
+            logsBox.innerHTML += `<div style="color:${color}">[DATA]: ${text}</div>`;
+            logsBox.scrollTop = logsBox.scrollHeight;
+        }
+
+        function showView(id) {
+            document.getElementById('gui-main').classList.add('hidden');
+            document.getElementById('gui-lobby').classList.add('hidden');
+            document.getElementById('gui-gameplay').classList.add('hidden');
+            document.getElementById(id).classList.remove('hidden');
+        }
+        // --- WEBRTC DIRECT LINK LOBBY ROUTINES ---
+        function initiateAsHost() {
+            myUsername = document.getElementById('username-input').value.trim() || 'HostAgent';
+            amIHost = true; peer = new Peer();
+            peer.on('open', (id) => {
+                myId = id; document.getElementById('lobby-code-display').textContent = id;
+                document.getElementById('start-game-btn').classList.remove('hidden');
+                document.getElementById('host-wait-msg').classList.add('hidden');
+                addSelfToState('Host-Admin'); showView('gui-lobby'); rebuildLobbyList();
+            });
+            peer.on('connection', handleIncomingConnection);
+        }
+
+        function initiateAsClient() {
+            myUsername = document.getElementById('username-input').value.trim() || 'ClientAgent';
+            let targetHub = document.getElementById('join-code-input').value.trim();
+            if(!targetHub) return alert("Paste a valid Host Hub ID!");
+            amIHost = false; peer = new Peer();
+            peer.on('open', () => {
+                let conn = peer.connect(targetHub);
+                setupConnectionChannels(conn);
+            });
+        }
+
+        function handleIncomingConnection(conn) {
+            setupConnectionChannels(conn);
+        }
+
+        function setupConnectionChannels(conn) {
+            connections.push(conn);
+            conn.on('open', () => {
+                if(!amIHost) { showView('gui-lobby'); pushLog("Paired directly with primary Host cluster."); }
+                conn.send({ type: 'handshake', name: myUsername });
+            });
+            conn.on('data', (pack) => {
+                if(amIHost) processDataAsHost(conn, pack);
+                else processDataAsClient(pack);
+            });
+        }
+
+        function addSelfToState(forcedRole = null) {
+            gameState.players[peer.id] = {
+                id: peer.id, name: myUsername, x: 80 + Math.random()*80, y: 180 + Math.random()*80,
+                alive: true, role: forcedRole || (Math.random() > 0.35 ? 'SysAdmin' : 'Infiltrator')
+            };
+        }
+
+        function rebuildLobbyList() {
+            const container = document.getElementById('player-list-box');
+            container.innerHTML = Object.values(gameState.players).map(p => `• 🕵️‍♂️ Agent: <b>${p.name}</b>`).join('<br>');
+        }
+
+        // --- PIPELINE HANDLERS ---
+        function processDataAsHost(conn, pack) {
+            if(pack.type === 'handshake') {
+                gameState.players[conn.peer] = {
+                    id: conn.peer, name: pack.name, x: 200, y: 200, alive: true,
+                    role: Math.random() > 0.35 ? 'SysAdmin' : 'Infiltrator'
+                };
+                rebuildLobbyList(); syncGlobalState();
+            }
+            if(pack.type === 'input') {
+                let p = gameState.players[conn.peer];
+                if(p && p.alive) { p.x = pack.x; p.y = pack.y; syncGlobalState(); }
+            }
+            if(pack.type === 'action') { handleActionRequest(conn.peer); }
+            if(pack.type === 'closeReport') { forwardToMesh({ type: 'hideOverlay' }); }
+        }
+
+        function processDataAsClient(pack) {
+            if(pack.type === 'sync') {
+                gameState = pack.state;
+                if(gameState.status === 'active' && document.getElementById('gui-gameplay').classList.contains('hidden')) {
+                    showView('gui-gameplay');
+                }
+                rebuildLobbyList();
+            }
+            if(pack.type === 'log') { pushLog(pack.msg, pack.color); }
+            if(pack.type === 'reportOverlay') {
+                document.getElementById('report-details').textContent = pack.details;
+                bodyOverlay.classList.remove('hidden');
+            }
+            if(pack.type === 'hideOverlay') { bodyOverlay.classList.add('hidden'); }
+        }
+
+        function syncGlobalState() {
+            forwardToMesh({ type: 'sync', state: gameState });
+        }
+
+        function forwardToMesh(data) {
+            connections.forEach(c => { if(c.open) c.send(data); });
+        }
+
+        function hostLaunchEngine() {
+            gameState.status = 'active'; assembleCoreWorld(); syncGlobalState(); showView('gui-gameplay');
+            pushLog("System deployment live. Locate malicious node injection signatures.", 'var(--matrix-green)');
+        }
+
+        // --- CORE RENDER CANVAS ACTIONS ---
+        let localKeys = {};
+        window.addEventListener('keydown', (e) => { localKeys[e.code] = true; });
+        window.addEventListener('keyup', (e) => { localKeys[e.code] = false; });
+
+        function runLocalPhysicsTick() {
+            if (gameState.status !== 'active') return;
+            let me = gameState.players[peer.id];
+            if (!me || !me.alive) return;
+
+            let origX = me.x, origY = me.y;
+            if (localKeys['ArrowUp'] || localKeys['KeyW']) me.y -= 3.5;
+            if (localKeys['ArrowDown'] || localKeys['KeyS']) me.y += 3.5;
+            if (localKeys['ArrowLeft'] || localKeys['KeyA']) me.x -= 3.5;
+            if (localKeys['ArrowRight'] || localKeys['KeyD']) me.x += 3.5;
+
+            // Box Wall Collisions against standard server stacks
+            gameState.nodes.forEach(n => {
+                if (me.x + 16 > n.x && me.x - 16 < n.x + n.w && me.y + 16 > n.y && me.y - 16 < n.y + n.h) {
+                    me.x = origX; me.y = origY; // Snap back bounds collision lock
+                }
             });
 
-            items.forEach((coin, index) => {
-                coin.x -= gameSpeed;
+            // Update remote peer registries
+            if(me.x !== origX || me.y !== origY) {
+                if(amIHost) syncGlobalState();
+                else socketSend({ type: 'input', x: me.x, y: me.y });
+            }
 
-                if(gameData.powerups.magnet) {
-                    let dx = player.x - coin.x;
-                    let dy = player.y - coin.y;
-                    let dist = Math.sqrt(dx*dx + dy*dy);
-                    if(dist < 200) {
-                        coin.x += (dx / dist) * 12;
-                        coin.y += (dy / dist) * 12;
+            // Context contextual trigger buttons check
+            let contextText = "💻 INTERACT DEVICE";
+            if(me.role === 'Infiltrator') contextText = "⚡ EXTERMINATE TARGET / CORRUPT";
+            
+            // Check if walking near dropped dead player instances
+            Object.values(gameState.players).forEach(other => {
+                if(!other.alive && Math.hypot(me.x - other.x, me.y - other.y) < 50) {
+                    contextText = "🚨 REPORT CASUALTY LOG";
+                }
+            });
+            actionBtn.textContent = contextText;
+        }
+
+        function socketSend(data) {
+            if(connections[0] && connections[0].open) connections[0].send(data);
+        }
+
+        function executeContextAction() {
+            if(amIHost) handleActionRequest(peer.id);
+            else socketSend({ type: 'action' });
+        }
+
+        function handleActionRequest(playerId) {
+            let user = gameState.players[playerId];
+            if(!user || !user.alive) return;
+
+            // 1. Check Dead Body Report Conditions
+            let bodyFound = false;
+            Object.values(gameState.players).forEach(other => {
+                if(!other.alive && Math.hypot(user.x - other.x, user.y - other.y) < 60) {
+                    bodyFound = true;
+                    forwardToMesh({ type: 'reportOverlay', details: `Discovered by ${user.name}` });
+                    // Trigger overlay locally for host immediately
+                    document.getElementById('report-details').textContent = `Discovered by ${user.name}`;
+                    bodyOverlay.classList.remove('hidden');
+                    forwardToMesh({ type: 'log', msg: `CRITICAL DISCOVERY: ${user.name} reported a body trace!`, color: 'var(--cyber-red)' });
+                }
+            });
+            if(bodyFound) return;
+
+            // 2. Infiltrator Exterminate/Infect Checks
+            if(user.role === 'Infiltrator') {
+                Object.values(gameState.players).forEach(other => {
+                    if(other.id !== playerId && other.alive && Math.hypot(user.x - other.x, user.y - other.y) < 45) {
+                        other.alive = false; forwardToMesh({ type: 'log', msg: `ALERT: Fatal telemetry signature disconnect registered.`, color: 'var(--cyber-red)' });
                     }
-                }
-
-                if (player.x < coin.x + coin.w && player.x + player.w > coin.x && player.y < coin.y + coin.w && player.y + player.h > coin.y) {
-                    gameData.coins += 1;
-                    coinCountEl.textContent = gameData.coins;
-                    items.splice(index, 1);
-                }
-                if(coin.x < -50) items.splice(index, 1);
-            });
-        }
-        function drawVisualLayer() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            ctx.fillStyle = '#090314';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            ctx.fillStyle = '#ffffff';
-            skyStars.forEach(s => ctx.fillRect(s.x, s.y, s.size, s.size));
-
-            cityscape.forEach(b => {
-                ctx.fillStyle = b.color;
-                ctx.fillRect(b.x, b.y, b.w, 450 - b.y);
-                ctx.fillStyle = '#2d1b4e';
-                ctx.fillRect(b.x, b.y, 4, 450 - b.y); 
-            });
-
-            ctx.fillStyle = '#1c1130';
-            ctx.fillRect(0, 390, canvas.width, 60);
-            ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--neon-pink').trim() || '#ff007f';
-            ctx.fillRect(0, 390, canvas.width, 4);
-
-            items.forEach(coin => {
-                ctx.fillStyle = '#ffd700';
-                ctx.beginPath();
-                ctx.arc(coin.x + 10, coin.y + 10, 10, 0, Math.PI*2);
-                ctx.fill();
-            });
-
-            obstacles.forEach(o => {
-                if(o.type === 'box') ctx.fillStyle = '#ff9d00';
-                else if(o.type === 'low') ctx.fillStyle = '#ff3333';
-                else ctx.fillStyle = '#ffff00';
-                ctx.fillRect(o.x, o.y, o.w, o.h);
-            });
-
-            ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--neon-blue').trim() || '#00ffff';
-            if(player.isDucking) {
-                ctx.fillRect(player.x, player.y + 30, player.w, 30);
-            } else {
-                ctx.fillRect(player.x, player.y, player.w, player.h);
+                });
             }
 
-            if(player.activeGrapple) {
-                ctx.strokeStyle = '#00ffff';
-                ctx.lineWidth = 3;
-                ctx.beginPath();
-                ctx.moveTo(player.x + 20, player.y);
-                ctx.lineTo(player.x + 80, 50);
-                ctx.stroke();
-            }
+            // 3. Node Corrupt/Lock systems processing
+            gameState.nodes.forEach(n => {
+                if(Math.hypot((n.x+32) - user.x, (n.y+32) - user.y) < 70) {
+                    n.status = user.role === 'Infiltrator' ? 'Infected' : 'Secure';
+                    forwardToMesh({ type: 'log', msg: `Terminal Node link ID-${n.id} updated to [${n.status}] by ${user.name}`, color: 'yellow' });
+                }
+            });
+            syncGlobalState();
         }
 
-        window.addEventListener('keydown', (e) => {
-            if (activeRebindAction) {
-                gameData.keybinds[activeRebindAction] = e.code;
-                let cleanText = e.code.replace('Key', '');
-                if(e.code === 'Space') cleanText = 'Space';
-                document.getElementById(`btn-${activeRebindAction}`).textContent = cleanText;
-                activeRebindAction = null;
-                return;
-            }
-
-            if (e.code === 'Escape' && isGameRunning) {
-                isGameRunning = false;
-                showScreen('menu-pause');
-                return;
-            }
-
-            if (isGameRunning) {
-                if (e.code === gameData.keybinds.jump && !player.isJumping && !player.isDucking) {
-                    player.vy = player.jumpForce;
-                    player.isJumping = true;
-                    gameData.coins += 1; 
-                    coinCountEl.textContent = gameData.coins;
-                }
-                if (e.code === gameData.keybinds.duck) {
-                    player.isDucking = true;
-                }
-                if (e.code === gameData.keybinds.punch) {
-                    obstacles.forEach((o, index) => {
-                        if(o.type === 'box' && o.x - player.x < 120 && o.x > player.x) {
-                            obstacles.splice(index, 1); 
-                        }
-                    });
-                }
-                if (e.code === gameData.keybinds.hook && gameData.powerups.grapple) {
-                    player.activeGrapple = true;
-                }
-                if (e.code === gameData.keybinds.teleport && gameData.powerups.dash) {
-                    player.x += 180;
-                    setTimeout(() => { player.x = 100; }, 250); 
-                }
-            }
-        });
-
-        window.addEventListener('keyup', (e) => {
-            if (e.code === gameData.keybinds.duck) player.isDucking = false;
-        });
-
-        function buyPowerUp(item, cost) {
-            if (gameData.coins >= cost && !gameData.powerups[item]) {
-                gameData.coins -= cost;
-                gameData.powerups[item] = true;
-                coinCountEl.textContent = gameData.coins;
-                document.getElementById(`shop-${item}`).disabled = true;
-                document.getElementById(`shop-${item}`).textContent = `✅ UNLOCKED`;
-            } else if(gameData.powerups[item]) {
-                alert("Already purchased!");
-            } else {
-                alert("Need more coins!");
-            }
+        function closeReportOverlay() {
+            if(amIHost) { bodyOverlay.classList.add('hidden'); forwardToMesh({ type: 'hideOverlay' }); }
+            else socketSend({ type: 'closeReport' });
         }
 
-        setInterval(() => {
-            updatePhysicsLoop();
-            drawVisualLayer();
-        }, 1000 / 60);
+        function drawGameFrame() {
+            ctx.clearRect(0,0,600,450);
+            // Render Background Grid floor arrays
+            ctx.fillStyle='#07050f'; ctx.fillRect(0,0,600,450);
+            ctx.strokeStyle='#130e26'; ctx.lineWidth=1;
+            for(let x=0;x<600;x+=30){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,450);ctx.stroke();}
+            for(let y=0;y<450;y+=30){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(600,y);ctx.stroke();}
 
-        initWorldEnvironment();
-        showScreen('menu-main');
-    </script>
-</body>
-</html>
+            // Draw Nodes using textures
+            if(gameState.nodes) {
+                gameState.nodes.forEach(n => {
+                    ctx.drawImage(textures.serverSkin, n.x, n.y);
+                    ctx.fillStyle = n.status === 'Secure' ? 'var(--matrix-green)' : 'var(--cyber-red)';
+                    ctx.fillRect(n.x+4, n.y+4, 6, 6); // Status LED marker
+                });
+            }
+
+            // Draw Players using loaded animated texture sheets
+            Object.values(gameState.players).forEach(p => {
+                if(p.alive) {
+                    ctx.drawImage(textures.agentSkin, p.x-16, p.y-16);
+                    ctx.fillStyle = '#fff'; ctx.font = '10px monospace';
+ctx.fillText(p.name, p.x - 20, p.y - 20);} else {ctx.drawImage(textures.eliminationMark, p.x-16, p.y-16);ctx.fillStyle = '#666'; ctx.font = '9px monospace'; ctx.fillText(${p.name} [DEAD], p.x-24, p.y-18);}});}// Initialize frame clock tickssetInterval(() => { runLocalPhysicsTick(); drawGameFrame(); }, 1000 / 60);cookTextureAssets();
