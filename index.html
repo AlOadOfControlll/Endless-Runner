@@ -8,7 +8,6 @@
             --neon-pink: #ff007f;
             --neon-blue: #00ffff;
             --bg-dark: #0a0612;
-            --panel-bg: #140d24;
         }
         body {
             margin: 0;
@@ -32,13 +31,12 @@
             position: relative;
             width: 800px;
             height: 450px;
-            background: linear-gradient(#1f1235, #0d0618);
+            background: #0d0618;
             border: 4px solid var(--neon-pink);
             box-shadow: 0 0 30px rgba(255, 0, 127, 0.4);
             border-radius: 10px;
             overflow: hidden;
         }
-        /* Overlays for Menus */
         .screen {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -51,7 +49,6 @@
             z-index: 10;
         }
         .hidden { display: none !important; }
-        
         h2 {
             color: var(--neon-blue);
             text-shadow: 0 0 10px var(--neon-blue);
@@ -59,7 +56,7 @@
             margin: 0 0 10px 0;
         }
         button {
-            width: 220px;
+            width: 260px;
             padding: 12px;
             font-size: 16px;
             font-weight: bold;
@@ -74,42 +71,23 @@
         button:hover { background: var(--neon-pink); color: #000; box-shadow: 0 0 10px var(--neon-pink); }
         button:active { transform: scale(0.95); }
 
-        /* Keybind Input Styling */
         .key-row {
             display: flex;
             justify-content: space-between;
-            width: 300px;
+            width: 320px;
             font-size: 18px;
             margin: 5px 0;
         }
         .key-btn {
-            width: 100px;
+            width: 120px;
             padding: 5px;
             font-size: 14px;
             border-color: var(--neon-blue);
         }
-
-        /* Active Gameplay Canvas Elements */
-        #game-world {
-            position: absolute;
+        #game-canvas {
+            display: block;
             width: 100%;
             height: 100%;
-        }
-        #player {
-            position: absolute;
-            bottom: 60px;
-            left: 100px;
-            width: 40px;
-            height: 60px;
-            background: var(--neon-blue);
-            border: 2px solid #fff;
-            box-shadow: 0 0 15px var(--neon-blue);
-        }
-        #ground {
-            position: absolute;
-            bottom: 0; width: 100%; height: 60px;
-            background: #1c1130;
-            border-top: 4px solid var(--neon-pink);
         }
     </style>
 </head>
@@ -117,99 +95,139 @@
 
     <div id="hud-top">
         <div>💰 Coins: <span id="coin-count">0</span></div>
-        <div>🏁 Checkpoint: <span id="cp-count">0</span></div>
+        <div>🏁 Checkpoints: <span id="cp-count">0</span></div>
         <div>🎯 Mode: <span id="current-mode">None</span></div>
     </div>
     
-    <div id="game-frame" id="main-view">
-        <!-- Live Action Gameplay Sandbox -->
-        <div id="game-world">
-            <div id="player"></div>
-            <div id="ground"></div>
-        </div>
+    <div id="game-frame">
+        <canvas id="game-canvas" width="800" height="450"></canvas>
 
-        <!-- Main Menu -->
         <div id="menu-main" class="screen">
             <h2>CLICKER DASH</h2>
             <button onclick="showScreen('menu-modes')">▶️ PLAY GAME</button>
-            <button onclick="showScreen('menu-shop')">🛒 SHOP POwER-UPS</button>
+            <button onclick="showScreen('menu-shop')">🛒 SHOP ABILITIES</button>
             <button onclick="showScreen('menu-settings')">⚙️ SETTINGS</button>
             <button onclick="toggleFullscreen()">🖵 FULLSCREEN</button>
         </div>
 
-        <!-- Difficulty Mode Select -->
         <div id="menu-modes" class="screen hidden">
             <h2>SELECT DIFFICULTY</h2>
-            <button onclick="setDifficulty('Easy')" style="border-color: #00ff00;">🟢 EASY (Buildings)</button>
-            <button onclick="setDifficulty('Medium')" style="border-color: #ff9d00;">🟡 MEDIUM (Fast)</button>
-            <button onclick="setDifficulty('Hard')" style="border-color: #ff3333;">🔴 HARD (Chaos)</button>
+            <button onclick="setDifficulty('Level Easy')" style="border-color: #00ff00;">🟢 LEVEL EASY</button>
+            <button onclick="setDifficulty('Medium')" style="border-color: #ff9d00;">🟡 MEDIUM</button>
+            <button onclick="setDifficulty('Chaos')" style="border-color: #ff3333;">🔴 CHAOS</button>
             <button onclick="showScreen('menu-main')" style="border-color: #888;">⬅️ BACK</button>
         </div>
 
-        <!-- Shop Menu -->
         <div id="menu-shop" class="screen hidden">
-            <h2>POWER-UP SHOP</h2>
-            <button id="shop-grapple" onclick="buyPowerUp('grapple', 50)">🪝 Grapple Hook<br>Cost: 50 coins</button>
-            <button id="shop-shield" onclick="buyPowerUp('shield', 30)">🛡️ Shield Active<br>Cost: 30 coins</button>
+            <h2>ABILITY SHOP</h2>
+            <button id="shop-grapple" onclick="buyPowerUp('grapple', 15)">🪝 Grapple Hook<br>Cost: 15 coins</button>
+            <button id="shop-magnet" onclick="buyPowerUp('magnet', 35)">🧲 Coin Magnet<br>Cost: 35 coins</button>
+            <button id="shop-dash" onclick="buyPowerUp('dash', 50)">🚀 Dash Boost Ability<br>Cost: 50 coins</button>
             <button onclick="showScreen('menu-main')" style="border-color: #888;">⬅️ BACK</button>
         </div>
 
-        <!-- Settings Keybinds Configuration -->
         <div id="menu-settings" class="screen hidden">
             <h2>CUSTOM KEYBINDS</h2>
-            <div style="color: #aaa; font-size: 12px; margin-bottom: 10px;">Click a button then press any key to rebind</div>
+            <div style="color: #aaa; font-size: 12px; margin-bottom: 10px;">Click an option then press any key to rebind</div>
             <div class="key-row"><span>Jump:</span><button class="key-btn" id="btn-jump" onclick="rebindAction('jump')">Space</button></div>
-            <div class="key-row"><span>Duck:</span><button class="key-btn" id="btn-duck" onclick="rebindAction('duck')">KeyE</button></div>
-            <div class="key-row"><span>Punch:</span><button class="key-btn" id="btn-punch" onclick="rebindAction('punch')">KeyR</button></div>
+            <div class="key-row"><span>Duck/Slide:</span><button class="key-btn" id="btn-duck" onclick="rebindAction('duck')">KeyE</button></div>
+            <div class="key-row"><span>Punch Object:</span><button class="key-btn" id="btn-punch" onclick="rebindAction('punch')">KeyR</button></div>
+            <div class="key-row"><span>Grapple:</span><button class="key-btn" id="btn-hook" onclick="rebindAction('hook')">ShiftLeft</button></div>
+            <div class="key-row"><span>Dash Ability:</span><button class="key-btn" id="btn-teleport" onclick="rebindAction('teleport')">KeyQ</button></div>
             <button onclick="showScreen('menu-main')" style="border-color: #888; margin-top: 15px;">⬅️ BACK</button>
         </div>
 
-        <!-- Active HUD Pause Overlay -->
         <div id="menu-pause" class="screen hidden">
             <h2>GAME PAUSED</h2>
             <button onclick="resumeGame()">▶️ RESUME</button>
             <button onclick="quitToMenu()">🏠 QUIT TO MENU</button>
         </div>
-    </div>
 
+        <div id="menu-gameover" class="screen hidden">
+            <h2 style="color: #ff3333; text-shadow: 0 0 10px #ff3333;">💥 CRASHED!</h2>
+            <p id="gameover-reason" style="color: #aaa; margin: 0;">Hit an obstacle</p>
+            <button onclick="showScreen('menu-modes')">🔄 TRY AGAIN</button>
+            <button onclick="quitToMenu()">🏠 MAIN MENU</button>
+        </div>
+    </div>
     <script>
-        // --- GAME CONTROL CONFIGURATION ---
         let gameData = {
             coins: 0,
             checkpoints: 0,
-            powerups: { grapple: false, shield: false },
+            powerups: { grapple: false, magnet: false, dash: false },
             keybinds: {
                 jump: 'Space',
                 duck: 'KeyE',
-                punch: 'KeyR'
+                punch: 'KeyR',
+                hook: 'ShiftLeft',
+                teleport: 'KeyQ'
             }
         };
 
-        let currentDifficulty = 'Easy';
+        let currentDifficulty = 'Level Easy';
         let isGameRunning = false;
         let activeRebindAction = null;
 
-        // UI Target Pointers
+        const canvas = document.getElementById('game-canvas');
+        const ctx = canvas.getContext('2d');
         const coinCountEl = document.getElementById('coin-count');
         const cpCountEl = document.getElementById('cp-count');
         const currentModeEl = document.getElementById('current-mode');
         const gameFrame = document.getElementById('game-frame');
 
-        // Initialize Settings Panel Screen View Changes
-        function showScreen(screenId) {
-            document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
-            if(screenId) {
-                document.getElementById(screenId).classList.remove('hidden');
+        let player = {
+            x: 100, y: 330, w: 40, h: 60,
+            vy: 0, gravity: 1.2, jumpForce: -18,
+            isJumping: false, isDucking: false, activeGrapple: false
+        };
+
+        let skyStars = [];
+        let cityscape = [];
+        let obstacles = [];
+        let items = [];
+        let gameSpeed = 5;
+        let distanceTraveled = 0;
+
+        function initWorldEnvironment() {
+            skyStars = []; cityscape = []; obstacles = []; items = [];
+            distanceTraveled = 0; gameData.checkpoints = 0;
+            cpCountEl.textContent = 0;
+
+            for(let i=0; i<40; i++) {
+                skyStars.push({x: Math.random()*800, y: Math.random()*200, size: Math.random()*2});
+            }
+            for(let i=0; i<6; i++) {
+                cityscape.push({
+                    x: i * 160,
+                    y: 150 + Math.random()*120,
+                    w: 120 + Math.random()*40,
+                    color: '#1a102f'
+                });
             }
         }
 
-        // Handle Active Run Engine Speeds and Initiation Controls
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+            if(screenId) document.getElementById(screenId).classList.remove('hidden');
+        }
+
         function setDifficulty(mode) {
             currentDifficulty = mode;
             currentModeEl.textContent = mode;
-            showScreen(null); // Clear overlays
+            
+            if(mode === 'Level Easy') gameSpeed = 4.5;
+            else if(mode === 'Medium') gameSpeed = 7.5;
+            else if(mode === 'Chaos') gameSpeed = 13;
+
+            initWorldEnvironment();
+            showScreen(null);
             isGameRunning = true;
-            // Gameplay simulation loop begins here next!
+        }
+
+        function triggerGameOver(reason) {
+            isGameRunning = false;
+            document.getElementById('gameover-reason').textContent = reason;
+            showScreen('menu-gameover');
         }
 
         function resumeGame() {
@@ -222,25 +240,151 @@
             showScreen('menu-main');
         }
 
-        // Fullscreen Mode Handler Engine Hooks
         function toggleFullscreen() {
             if (!document.fullscreenElement) {
-                gameFrame.requestFullscreen().catch(err => {
-                    alert(`Error enabling fullscreen: ${err.message}`);
-                });
+                gameFrame.requestFullscreen().catch(err => {alert(err.message);});
             } else {
                 document.exitFullscreen();
             }
         }
 
-        // Custom Keybinding Assignment Routines
         function rebindAction(action) {
             activeRebindAction = action;
             document.getElementById(`btn-${action}`).textContent = '⏳ Press...';
         }
 
+        function updatePhysicsLoop() {
+            if (!isGameRunning) return;
+
+            distanceTraveled += gameSpeed;
+            if(Math.floor(distanceTraveled) % 2500 === 0) {
+                gameData.checkpoints++;
+                cpCountEl.textContent = gameData.checkpoints;
+            }
+
+            if (player.activeGrapple) {
+                player.y -= 10;
+                if(player.y <= 100) { player.y = 100; player.activeGrapple = false; }
+            } else {
+                player.vy += player.gravity;
+                player.y += player.vy;
+            }
+
+            if(player.y >= 330) {
+                player.y = 330;
+                player.vy = 0;
+                player.isJumping = false;
+            }
+
+            if(Math.random() < 0.015 && obstacles.length < 3) {
+                let typeRand = Math.random();
+                let obsType = 'tall'; 
+                if(typeRand > 0.5) obsType = 'low'; 
+                if(typeRand > 0.8) obsType = 'box'; 
+
+                obstacles.push({
+                    x: 850,
+                    y: obsType === 'low' ? 290 : 330,
+                    w: 30, h: obsType === 'low' ? 30 : 60,
+                    type: obsType
+                });
+            }
+
+            if(Math.random() < 0.02 && items.length < 5) {
+                items.push({ x: 850, y: 250 + Math.random()*80, w: 20, collected: false });
+            }
+
+            cityscape.forEach(b => {
+                b.x -= gameSpeed * 0.3;
+                if(b.x + b.w < 0) b.x = 850;
+            });
+
+            obstacles.forEach((o, index) => {
+                o.x -= gameSpeed;
+                
+                let px = player.x, py = player.isDucking ? player.y + 30 : player.y;
+                let pw = player.w, ph = player.isDucking ? 30 : player.h;
+
+                if (px < o.x + o.w && px + pw > o.x && py < o.y + o.h && py + ph > o.y) {
+                    triggerGameOver(o.type === 'low' ? "Failed to slide under barrier!" : "Crashed into barrier building structure!");
+                }
+                if(o.x < -50) obstacles.splice(index, 1);
+            });
+
+            items.forEach((coin, index) => {
+                coin.x -= gameSpeed;
+
+                if(gameData.powerups.magnet) {
+                    let dx = player.x - coin.x;
+                    let dy = player.y - coin.y;
+                    let dist = Math.sqrt(dx*dx + dy*dy);
+                    if(dist < 200) {
+                        coin.x += (dx / dist) * 12;
+                        coin.y += (dy / dist) * 12;
+                    }
+                }
+
+                if (player.x < coin.x + coin.w && player.x + player.w > coin.x && player.y < coin.y + coin.w && player.y + player.h > coin.y) {
+                    gameData.coins += 1;
+                    coinCountEl.textContent = gameData.coins;
+                    items.splice(index, 1);
+                }
+                if(coin.x < -50) items.splice(index, 1);
+            });
+        }
+        function drawVisualLayer() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            ctx.fillStyle = '#090314';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.fillStyle = '#ffffff';
+            skyStars.forEach(s => ctx.fillRect(s.x, s.y, s.size, s.size));
+
+            cityscape.forEach(b => {
+                ctx.fillStyle = b.color;
+                ctx.fillRect(b.x, b.y, b.w, 450 - b.y);
+                ctx.fillStyle = '#2d1b4e';
+                ctx.fillRect(b.x, b.y, 4, 450 - b.y); 
+            });
+
+            ctx.fillStyle = '#1c1130';
+            ctx.fillRect(0, 390, canvas.width, 60);
+            ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--neon-pink').trim() || '#ff007f';
+            ctx.fillRect(0, 390, canvas.width, 4);
+
+            items.forEach(coin => {
+                ctx.fillStyle = '#ffd700';
+                ctx.beginPath();
+                ctx.arc(coin.x + 10, coin.y + 10, 10, 0, Math.PI*2);
+                ctx.fill();
+            });
+
+            obstacles.forEach(o => {
+                if(o.type === 'box') ctx.fillStyle = '#ff9d00';
+                else if(o.type === 'low') ctx.fillStyle = '#ff3333';
+                else ctx.fillStyle = '#ffff00';
+                ctx.fillRect(o.x, o.y, o.w, o.h);
+            });
+
+            ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--neon-blue').trim() || '#00ffff';
+            if(player.isDucking) {
+                ctx.fillRect(player.x, player.y + 30, player.w, 30);
+            } else {
+                ctx.fillRect(player.x, player.y, player.w, player.h);
+            }
+
+            if(player.activeGrapple) {
+                ctx.strokeStyle = '#00ffff';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(player.x + 20, player.y);
+                ctx.lineTo(player.x + 80, 50);
+                ctx.stroke();
+            }
+        }
+
         window.addEventListener('keydown', (e) => {
-            // Rebinding System Trigger Check
             if (activeRebindAction) {
                 gameData.keybinds[activeRebindAction] = e.code;
                 let cleanText = e.code.replace('Key', '');
@@ -250,30 +394,43 @@
                 return;
             }
 
-            // Pause Input System Key Check
             if (e.code === 'Escape' && isGameRunning) {
                 isGameRunning = false;
                 showScreen('menu-pause');
                 return;
             }
 
-            // Active Core Running Gameplay Controller Routine Checks
             if (isGameRunning) {
-                if (e.code === gameData.keybinds.jump) {
-                    // Trigger Jump Mechanics
-                    gameData.coins += 1; // 1 coin awarded per jump action sequence rules
+                if (e.code === gameData.keybinds.jump && !player.isJumping && !player.isDucking) {
+                    player.vy = player.jumpForce;
+                    player.isJumping = true;
+                    gameData.coins += 1; 
                     coinCountEl.textContent = gameData.coins;
                 }
                 if (e.code === gameData.keybinds.duck) {
-                    // Trigger Character Slide/Duck Mechanics
+                    player.isDucking = true;
                 }
                 if (e.code === gameData.keybinds.punch) {
-                    // Action Breakable Target Destruct Rules
+                    obstacles.forEach((o, index) => {
+                        if(o.type === 'box' && o.x - player.x < 120 && o.x > player.x) {
+                            obstacles.splice(index, 1); 
+                        }
+                    });
+                }
+                if (e.code === gameData.keybinds.hook && gameData.powerups.grapple) {
+                    player.activeGrapple = true;
+                }
+                if (e.code === gameData.keybinds.teleport && gameData.powerups.dash) {
+                    player.x += 180;
+                    setTimeout(() => { player.x = 100; }, 250); 
                 }
             }
         });
 
-        // Store Logic Purchase Upgrades Manager Engine Checks
+        window.addEventListener('keyup', (e) => {
+            if (e.code === gameData.keybinds.duck) player.isDucking = false;
+        });
+
         function buyPowerUp(item, cost) {
             if (gameData.coins >= cost && !gameData.powerups[item]) {
                 gameData.coins -= cost;
@@ -284,9 +441,17 @@
             } else if(gameData.powerups[item]) {
                 alert("Already purchased!");
             } else {
-                alert("Not enough coins!");
+                alert("Need more coins!");
             }
         }
+
+        setInterval(() => {
+            updatePhysicsLoop();
+            drawVisualLayer();
+        }, 1000 / 60);
+
+        initWorldEnvironment();
+        showScreen('menu-main');
     </script>
 </body>
 </html>
